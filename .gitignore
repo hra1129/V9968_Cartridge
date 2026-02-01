@@ -1,0 +1,15 @@
+*.o
+*.obj
+*.tlog
+*.pdb
+*.idb
+*.ipdb
+*.iobj
+.vs
+work
+*.wlf
+*.vcd
+log.txt
+*.rom
+romimage_*.h
+transcript
