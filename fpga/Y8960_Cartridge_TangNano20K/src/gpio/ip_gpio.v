@@ -82,7 +82,7 @@ module ip_gpio(
 	// 11h .... Green
 	// 12h .... Blue and Write
 	// -------------------------------------------------------------------------
-	always @( posedge clk or negedge reset_n ) begin
+	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_wr		<= 1'b0;
 			ff_red		<= 8'h55;
@@ -117,7 +117,7 @@ module ip_gpio(
 		end
 	end
 
-	always @( posedge clk or negedge reset_n ) begin
+	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_rdata	<= 8'd0;
 			ff_rdata_en	<= 1'b0;

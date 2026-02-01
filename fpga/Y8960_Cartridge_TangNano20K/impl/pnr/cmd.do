@@ -1,8 +1,8 @@
--d D:\github\HRA_product\TangCartMSX\RTL\tangnano20k_vdp_cartridge_rev2_step1\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg
+-d D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg
 -p GW2AR-18C-QFN88-8
 -pn GW2AR-LV18QN88C8/I7
--cst D:\github\HRA_product\TangCartMSX\RTL\tangnano20k_vdp_cartridge_rev2_step1\src\tangnano20k_vdp_cartridge.cst
--cfg D:\github\HRA_product\TangCartMSX\RTL\tangnano20k_vdp_cartridge_rev2_step1\impl\pnr\device.cfg
+-cst D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\src\tangnano20k_vdp_cartridge.cst
+-cfg D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\pnr\device.cfg
 -bit
 -tr
 -ph

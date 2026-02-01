@@ -133,7 +133,7 @@ module msx_slot(
 		ff_slot_rd_n			<= ff_pre_slot_rd_n;
 	end
 
-	always @( posedge clk or negedge p_slot_reset_n ) begin
+	always @( posedge clk ) begin
 		if( !p_slot_reset_n ) begin
 			ff_iorq_wr			<= 1'b0;
 			ff_iorq_rd			<= 1'b0;
