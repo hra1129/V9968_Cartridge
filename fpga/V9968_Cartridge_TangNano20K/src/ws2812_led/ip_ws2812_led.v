@@ -130,7 +130,7 @@ module ip_ws2812_led(
 	// --------------------------------------------------------------------
 	//	request-acceptance circuit
 	// --------------------------------------------------------------------
-	always @( posedge clk or negedge reset_n ) begin
+	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_sending		<= 1'b0;
 		end
@@ -145,7 +145,7 @@ module ip_ws2812_led(
 	// --------------------------------------------------------------------
 	//	state machine
 	// --------------------------------------------------------------------
-	always @( posedge clk or negedge reset_n ) begin
+	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_state	<= c_st_idle;
 			ff_count	<= 15'd0;
@@ -213,7 +213,7 @@ module ip_ws2812_led(
 	// --------------------------------------------------------------------
 	//	shift register
 	// --------------------------------------------------------------------
-	always @( posedge clk or negedge reset_n ) begin
+	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_send_data <= 24'd0;
 		end

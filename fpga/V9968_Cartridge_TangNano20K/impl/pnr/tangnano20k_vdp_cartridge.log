@@ -1,7 +1,7 @@
-Reading netlist file: "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg"
-Parsing netlist file "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg" completed
+Reading netlist file: "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg"
+Parsing netlist file "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg" completed
 Processing netlist completed
-Reading constraint file: "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\src\tangnano20k_vdp_cartridge.cst"
+Reading constraint file: "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\tangnano20k_vdp_cartridge.cst"
 Physical Constraint parsed completed
 Running placement......
 [10%] Placement Phase 0 completed
@@ -21,10 +21,10 @@ Bitstream generation in progress......
 Bitstream generation completed
 Running power analysis......
 [100%] Power analysis completed
-Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.power.html" completed
-Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.pin.html" completed
-Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.rpt.html" completed
-Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.rpt.txt" completed
-Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\Y8960_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.tr.html" completed
-Mon Feb  2 06:48:42 2026
+Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.power.html" completed
+Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.pin.html" completed
+Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.rpt.html" completed
+Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.rpt.txt" completed
+Generate file "D:\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.tr.html" completed
+Mon Feb  2 07:16:12 2026
 
