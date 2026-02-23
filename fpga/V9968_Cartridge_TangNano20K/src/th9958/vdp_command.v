@@ -229,10 +229,6 @@ module vdp_command (
 	reg					ff_border_detect_request;
 	reg					ff_border_detect;
 	reg					ff_read_color;
-	wire				w_sx_active;
-	wire				w_dx_active;
-	wire				w_sy_active;
-	wire				w_dy_active;
 	reg					ff_sx_active;
 	reg					ff_dx_active;
 	reg					ff_sy_active;
@@ -687,24 +683,21 @@ module vdp_command (
 			ff_512pixel <= 1'b0;
 		end
 		else if( ff_start ) begin
-			ff_sx_active <= w_sx_active;
-			ff_dx_active <= w_dx_active;
-			ff_sy_active <= w_sy_active;
-			ff_dy_active <= w_dy_active;
+			ff_sx_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_lrmm || ff_command == c_srch);
+			ff_sy_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_lrmm);
+
+			ff_dx_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
+							   ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
+							   ff_command == c_line);
+			ff_dy_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
+							   ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
+							   ff_command == c_line);
 			ff_512pixel <= w_512pixel;
 		end
 	end
 
 	assign w_next_dx		= ff_dix ? ( { 1'b0, ff_dx } - w_next ): ( { 1'b0, ff_dx } + w_next );
 	assign w_next_dy		= ff_diy ? ( { 2'd0, ff_dy } - 13'd1  ): ( { 2'd0, ff_dy } + 13'd1  );
-	assign w_sx_active		= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_srch);
-	assign w_dx_active		= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
-							   ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
-							   ff_command == c_line);
-	assign w_sy_active		= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_lrmm);
-	assign w_dy_active		= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
-							   ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
-							   ff_command == c_line);
 	assign w_sx_overflow	= ff_sx_active && (w_next_sx[9] || (!ff_512pixel && w_next_sx[8]));
 	assign w_dx_overflow	= ff_dx_active && (w_next_dx[9] || (!ff_512pixel && w_next_dx[8]));
 	assign w_dy_overflow	= w_next_dy[12];

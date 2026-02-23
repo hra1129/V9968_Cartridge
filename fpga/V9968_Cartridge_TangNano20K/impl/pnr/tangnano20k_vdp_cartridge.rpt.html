@@ -83,7 +83,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Mon Feb 23 18:52:33 2026
+<td>Mon Feb 23 22:36:31 2026
 </td>
 </tr>
 <tr>
@@ -98,23 +98,23 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td class="label">Place & Route Process</td>
 <td>Running placement:
    Placement Phase 0: CPU time = 0h 0m 2s, Elapsed time = 0h 0m 2s
-   Placement Phase 1: CPU time = 0h 0m 0.639s, Elapsed time = 0h 0m 0.639s
+   Placement Phase 1: CPU time = 0h 0m 0.603s, Elapsed time = 0h 0m 0.604s
    Placement Phase 2: CPU time = 0h 0m 7s, Elapsed time = 0h 0m 7s
    Placement Phase 3: CPU time = 0h 0m 10s, Elapsed time = 0h 0m 10s
-   Total Placement: CPU time = 0h 0m 21s, Elapsed time = 0h 0m 21s
+   Total Placement: CPU time = 0h 0m 20s, Elapsed time = 0h 0m 20s
 Running routing:
-   Routing Phase 0: CPU time = 0h 0m 0.005s, Elapsed time = 0h 0m 0.005s
-   Routing Phase 1: CPU time = 0h 0m 0.587s, Elapsed time = 0h 0m 0.587s
-   Routing Phase 2: CPU time = 0h 0m 14s, Elapsed time = 0h 0m 14s
+   Routing Phase 0: CPU time = 0h 0m 0.008s, Elapsed time = 0h 0m 0.008s
+   Routing Phase 1: CPU time = 0h 0m 0.584s, Elapsed time = 0h 0m 0.584s
+   Routing Phase 2: CPU time = 0h 0m 11s, Elapsed time = 0h 0m 11s
    Routing Phase 3: CPU time = 0h 0m 0s, Elapsed time = 0h 0m 0s
-   Total Routing: CPU time = 0h 0m 14s, Elapsed time = 0h 0m 14s
+   Total Routing: CPU time = 0h 0m 11s, Elapsed time = 0h 0m 11s
 Generate output files:
    CPU time = 0h 0m 4s, Elapsed time = 0h 0m 4s
 </td>
 </tr>
 <tr>
 <td class="label">Total Time and Memory Usage</td>
-<td>CPU time = 0h 0m 39s, Elapsed time = 0h 0m 39s, Peak memory usage = 519MB</td>
+<td>CPU time = 0h 0m 36s, Elapsed time = 0h 0m 36s, Peak memory usage = 536MB</td>
 </tr>
 </table>
 <br/>
@@ -129,12 +129,12 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Logic</td>
-<td>7080/20736</td>
-<td>35%</td>
+<td>6984/20736</td>
+<td>34%</td>
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --LUT,ALU,ROM16</td>
-<td>6948(6103 LUT, 845 ALU, 0 ROM16)</td>
+<td>6852(6007 LUT, 845 ALU, 0 ROM16)</td>
 <td>-</td>
 </tr>
 <tr>
@@ -169,7 +169,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">CLS</td>
-<td>5472/10368</td>
+<td>5394/10368</td>
 <td>53%</td>
 </tr>
 <tr>
@@ -301,12 +301,17 @@ Generate output files:
 <tr>
 <td class="label">O_sdram_clk_d</td>
 <td>PRIMARY</td>
-<td> TR TL</td>
+<td> TR TL BR BL</td>
 </tr>
 <tr>
 <td class="label">clk42m</td>
 <td>PRIMARY</td>
 <td> BR BL</td>
+</tr>
+<tr>
+<td class="label">ff_reset_n2</td>
+<td>LW</td>
+<td> -</td>
 </tr>
 <tr>
 <td class="label">ff_reset2_n3</td>
@@ -325,11 +330,6 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">u_v9958/w_h_count[0]</td>
-<td>LW</td>
-<td> -</td>
-</tr>
-<tr>
-<td class="label">u_v9958/u_timing_control/u_screen_mode/ff_pattern7_7_5</td>
 <td>LW</td>
 <td> -</td>
 </tr>

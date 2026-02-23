@@ -277,12 +277,12 @@ module vdp_timing_control_ssg (
 		if( !reset_n ) begin
 			ff_vsync <= 1'b1;
 		end
+		else if( w_intr_frame_timing ) begin
+			ff_vsync <= 1'b1;
+		end
 		else if( w_h_count_end ) begin
-			if( ff_v_count[0] == 1'b1 && w_screen_pos_y == 10'h3FE ) begin
+			if( ff_v_count[0] == 1'b1 && w_screen_pos_y == 10'h3FF ) begin
 				ff_vsync <= 1'b0;
-			end
-			else if( ff_v_count[0] == 1'b1 && ((reg_212lines_mode && (w_screen_pos_y == 10'd211)) || (!reg_212lines_mode && (w_screen_pos_y == 10'd191))) ) begin
-				ff_vsync <= 1'b1;
 			end
 			else if( w_v_count_end ) begin
 				ff_vsync <= 1'b1;
