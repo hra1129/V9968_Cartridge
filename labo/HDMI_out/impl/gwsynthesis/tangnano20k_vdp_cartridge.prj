@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gowin-synthesis-project>
+<Project>
+    <Version>beta</Version>
+    <Device id="GW2AR-18C" package="QFN88" speed="8" partNumber="GW2AR-LV18QN88C8/I7"/>
+    <FileList>
+        <File path="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll\gowin_rpll.v" type="verilog"/>
+        <File path="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll2\gowin_rpll2.v" type="verilog"/>
+        <File path="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\sound\sound.v" type="verilog"/>
+        <File path="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v" type="verilog"/>
+        <File path="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd" type="vhdl"/>
+        <File path="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd" type="vhdl"/>
+    </FileList>
+    <OptionList>
+        <Option type="disable_insert_pad" value="0"/>
+        <Option type="global_freq" value="14.320"/>
+        <Option type="looplimit" value="200000"/>
+        <Option type="output_file" value="D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg"/>
+        <Option type="print_all_synthesis_warning" value="1"/>
+        <Option type="ram_rw_check" value="1"/>
+        <Option type="top_module" value="tangnano20k_vdp_cartridge"/>
+        <Option type="vcc" value="1.0"/>
+        <Option type="verilog_language" value="verilog-2001"/>
+        <Option type="vhdl_language" value="vhdl-2019"/>
+    </OptionList>
+</Project>

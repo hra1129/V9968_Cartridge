@@ -1,0 +1,142 @@
+GowinSynthesis start
+Running parser ...
+Analyzing Verilog file 'D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll\gowin_rpll.v'
+Analyzing Verilog file 'D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll2\gowin_rpll2.v'
+Analyzing Verilog file 'D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\sound\sound.v'
+Analyzing Verilog file 'D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v'
+Analyzing VHDL file 'D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd'
+Analyzing entity 'hdmi_tx_scfifo'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":126)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":147)
+Analyzing entity 'hdmi_tx_delay'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":235)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":250)
+Analyzing entity 'hdmi_tx_audiopacket_submodule'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":291)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":317)
+Analyzing entity 'hdmi_tx_infopacket_submodule'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":544)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":603)
+Analyzing entity 'hdmi_tx_dataisland_submodule'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":840)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":863)
+Analyzing entity 'hdmi_tx_tmds_encoder_submodule'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1037)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1058)
+Analyzing entity 'hdmi_tx_pdiff_submodule'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1249)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1269)
+Analyzing entity 'hdmi_tx'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1397)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1473)
+Analyzing VHDL file 'D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd'
+Analyzing entity 'video_syncgen'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":45)
+Analyzing architecture 'rtl'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":140)
+Compiling module 'tangnano20k_vdp_cartridge'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":24)
+Compiling module 'Gowin_rPLL'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll\gowin_rpll.v":10)
+Compiling module 'Gowin_rPLL2'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll2\gowin_rpll2.v":10)
+Switching to VHDL mode to elaborate design unit 'video_syncgen'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":174)
+Processing 'video_syncgen(h_total=858,h_sync=62,h_backp=60,h_active=720,v_sync=6,v_backp=30)(1,4)(1,3)(1,6)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":45)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":213)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":220)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":184)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":184)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":193)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":193)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":580)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":580)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":594)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":594)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":619)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":619)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":633)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":633)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":656)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":656)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":670)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":670)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":693)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":693)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":708)
+WARN  (EX4610) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\video_syncgen.vhd":708)
+Returning to Verilog mode to proceed with elaboration("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":174)
+Compiling module 'sound'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\sound\sound.v":7)
+Switching to VHDL mode to elaborate design unit 'hdmi_tx'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":225)
+Processing 'hdmi_tx(device_family="MAX 10",clock_frequency=27.0,use_extcontrol="ON",audio_frequency=48.0)(1,6)(1,4)(1,2)(1,8)(1,4)(1,4)(1,4)(1,3)(1,3)(1,7)(1,8)(1,2)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1397)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 4 is different from right argument length 3 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1559)
+Processing 'hdmi_tx_audiopacket_submodule(audio_frequency=48.0)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":291)
+Processing 'hdmi_tx_scfifo(fifo_word_width=8,fifo_data_width=9)(1,4)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":126)
+Extracting RAM for identifier 'ram'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":154)
+Processing 'hdmi_tx_infopacket_submodule(clock_frequency=27.0,audio_frequency=48.0)(1,4)(1,4)(1,4)(1,3)(1,3)(1,7)(1,8)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":544)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 4 is different from right argument length 5 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":658)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 4 is different from right argument length 3 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":660)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 6 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":662)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":662)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 4 is different from right argument length 3 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":665)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":668)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 5 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":668)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 8 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":668)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 8 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":668)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 3 is different from right argument length 8 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":669)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 8 is different from right argument length 5 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":674)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 8 is different from right argument length 6 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":674)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 8 is different from right argument length 4 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":674)
+WARN  (EX1998) : Net 'infotable_sig[6][7]' does not have a driver("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":691)
+Processing 'hdmi_tx_dataisland_submodule(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":840)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 4 is different from right argument length 8 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1692)
+WARN  (EX4196) : Comparison between unequal length arrays always returns FALSE, left argument length 4 is different from right argument length 3 for 'string' array("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1738)
+Processing 'hdmi_tx_tmds_encoder_submodule(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1037)
+Processing 'hdmi_tx_tmds_encoder_submodule(tmds_channel=1)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1037)
+Processing 'hdmi_tx_tmds_encoder_submodule(tmds_channel=2)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1037)
+Processing 'hdmi_tx_pdiff_submodule(device_family="MAX 10")(1,6)(RTL)'("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\hdmi_tx\src\hdmi_tx_gw.vhd":1249)
+Returning to Verilog mode to proceed with elaboration("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":225)
+WARN  (EX2565) : Input 'cc_swap' on this instance is undriven. Assigning to 0, simulation mismatch possible. Please assign the input or remove the declaration("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":206)
+NOTE  (EX0101) : Current top module is "tangnano20k_vdp_cartridge"
+WARN  (EX0211) : The output port "slot_intr" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":32)
+WARN  (EX0211) : The output port "slot_data_dir" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":33)
+WARN  (EX0211) : The output port "ws2812_led" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":38)
+WARN  (EX0211) : The output port "O_sdram_clk" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":47)
+WARN  (EX0211) : The output port "O_sdram_cke" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":48)
+WARN  (EX0211) : The output port "O_sdram_cs_n" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":49)
+WARN  (EX0211) : The output port "O_sdram_ras_n" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":50)
+WARN  (EX0211) : The output port "O_sdram_cas_n" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":51)
+WARN  (EX0211) : The output port "O_sdram_wen_n" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":52)
+WARN  (EX0211) : The output port "O_sdram_addr[10]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[9]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[8]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[7]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[6]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[5]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[4]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[3]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[2]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[1]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_addr[0]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":54)
+WARN  (EX0211) : The output port "O_sdram_ba[1]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":55)
+WARN  (EX0211) : The output port "O_sdram_ba[0]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":55)
+WARN  (EX0211) : The output port "O_sdram_dqm[3]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":56)
+WARN  (EX0211) : The output port "O_sdram_dqm[2]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":56)
+WARN  (EX0211) : The output port "O_sdram_dqm[1]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":56)
+WARN  (EX0211) : The output port "O_sdram_dqm[0]" of module "tangnano20k_vdp_cartridge" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":56)
+WARN  (NL0001) : Sweep user defined dangling instance "u_pll2/rpll_inst"("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\gowin_rpll2\gowin_rpll2.v":41)
+[5%] Running netlist conversion ...
+WARN  (CV0016) : Input clk14m is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":26)
+WARN  (CV0016) : Input slot_iorq_n is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":28)
+WARN  (CV0016) : Input slot_rd_n is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":29)
+WARN  (CV0016) : Input slot_wr_n is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":30)
+WARN  (CV0016) : Input slot_a is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":34)
+WARN  (CV0016) : Input dipsw is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":37)
+WARN  (CV0016) : Input button is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":39)
+WARN  (CV0017) : Inout slot_d is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":35)
+WARN  (CV0017) : Inout IO_sdram_dq is unused("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":53)
+Running device independent optimization ...
+[10%] Optimizing Phase 0 completed
+[15%] Optimizing Phase 1 completed
+[25%] Optimizing Phase 2 completed
+Running inference ...
+[30%] Inferring Phase 0 completed
+[40%] Inferring Phase 1 completed
+[50%] Inferring Phase 2 completed
+[55%] Inferring Phase 3 completed
+Running technical mapping ...
+[60%] Tech-Mapping Phase 0 completed
+[65%] Tech-Mapping Phase 1 completed
+[75%] Tech-Mapping Phase 2 completed
+[80%] Tech-Mapping Phase 3 completed
+[90%] Tech-Mapping Phase 4 completed
+WARN  (NL0002) : The module "Gowin_rPLL2" instantiated to "u_pll2" is swept in optimizing("D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\src\tangnano20k_vdp_cartridge.v":134)
+[95%] Generate netlist file "D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\impl\gwsynthesis\tangnano20k_vdp_cartridge.vg" completed
+[100%] Generate report file "D:\github\HRA_product\V9968_Cartridge\labo\HDMI_out\impl\gwsynthesis\tangnano20k_vdp_cartridge_syn.rpt.html" completed
+GowinSynthesis finish

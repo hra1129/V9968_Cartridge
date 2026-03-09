@@ -1,0 +1,120 @@
+[
+ {
+  "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+  "InstLine" : 24,
+  "InstName" : "tangnano20k_vdp_cartridge",
+  "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+  "ModuleLine" : 24,
+  "ModuleName" : "tangnano20k_vdp_cartridge",
+  "SubInsts" : [
+   {
+    "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+    "InstLine" : 124,
+    "InstName" : "u_pll",
+    "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/gowin_rpll/gowin_rpll.v",
+    "ModuleLine" : 10,
+    "ModuleName" : "Gowin_rPLL"
+   },
+   {
+    "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+    "InstLine" : 129,
+    "InstName" : "u_pll2",
+    "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/gowin_rpll2/gowin_rpll2.v",
+    "ModuleLine" : 10,
+    "ModuleName" : "Gowin_rPLL2"
+   },
+   {
+    "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+    "InstLine" : 157,
+    "InstName" : "u_video_syncgen",
+    "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/video_syncgen.vhd",
+    "ModuleLine" : 45,
+    "ModuleName" : "video_syncgen"
+   },
+   {
+    "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+    "InstLine" : 176,
+    "InstName" : "u_sound",
+    "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/sound/sound.v",
+    "ModuleLine" : 7,
+    "ModuleName" : "sound"
+   },
+   {
+    "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/tangnano20k_vdp_cartridge.v",
+    "InstLine" : 206,
+    "InstName" : "u_hdmi_tx",
+    "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+    "ModuleLine" : 1397,
+    "ModuleName" : "hdmi_tx",
+    "SubInsts" : [
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1598,
+      "InstName" : "gen_audio.u_audio",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 291,
+      "ModuleName" : "hdmi_tx_audiopacket_submodule",
+      "SubInsts" : [
+       {
+        "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+        "InstLine" : 473,
+        "InstName" : "u_fifo",
+        "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+        "ModuleLine" : 126,
+        "ModuleName" : "hdmi_tx_scfifo"
+       }
+      ]
+     },
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1631,
+      "InstName" : "gen_info.u_info",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 544,
+      "ModuleName" : "hdmi_tx_infopacket_submodule"
+     },
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1671,
+      "InstName" : "gen_data.u_data",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 840,
+      "ModuleName" : "hdmi_tx_dataisland_submodule"
+     },
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1745,
+      "InstName" : "gen_enc[0].u",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 1037,
+      "ModuleName" : "hdmi_tx_tmds_encoder_submodule"
+     },
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1745,
+      "InstName" : "gen_enc[1].u",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 1037,
+      "ModuleName" : "hdmi_tx_tmds_encoder_submodule"
+     },
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1745,
+      "InstName" : "gen_enc[2].u",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 1037,
+      "ModuleName" : "hdmi_tx_tmds_encoder_submodule"
+     },
+     {
+      "InstFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "InstLine" : 1766,
+      "InstName" : "u_ser",
+      "ModuleFile" : "D:/github/HRA_product/V9968_Cartridge/labo/HDMI_out/src/hdmi_tx/src/hdmi_tx_gw.vhd",
+      "ModuleLine" : 1249,
+      "ModuleName" : "hdmi_tx_pdiff_submodule"
+     }
+    ]
+   }
+  ]
+ }
+]

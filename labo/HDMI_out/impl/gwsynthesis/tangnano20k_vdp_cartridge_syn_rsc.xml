@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module name="tangnano20k_vdp_cartridge" Register="3" Lut="1" T_Register="684(3)" T_Alu="49(0)" T_Lut="1236(1)" T_Bsram="1(0)">
+ <SubModule name="u_pll"/>
+ <SubModule name="u_video_syncgen" Register="93" Lut="376" T_Register="93(93)" T_Lut="376(376)"/>
+ <SubModule name="u_sound" Register="45" Alu="17" Lut="52" T_Register="45(45)" T_Alu="17(17)" T_Lut="52(52)"/>
+ <SubModule name="u_hdmi_tx" Register="3" Lut="6" T_Register="543(3)" T_Alu="32(0)" T_Lut="807(6)" T_Bsram="1(0)">
+  <SubModule name="gen_audio.u_audio" Register="29" Alu="4" Lut="60" T_Register="54(29)" T_Alu="20(4)" T_Lut="82(60)" T_Bsram="1(0)">
+   <SubModule name="u_fifo" Register="25" Alu="16" Lut="22" Bsram="1" T_Register="25(25)" T_Alu="16(16)" T_Lut="22(22)" T_Bsram="1(1)"/>
+  </SubModule>
+  <SubModule name="gen_info.u_info" Register="20" Lut="48" T_Register="20(20)" T_Lut="48(48)"/>
+  <SubModule name="gen_data.u_data" Register="299" Lut="389" T_Register="299(299)" T_Lut="389(389)"/>
+  <SubModule name="gen_enc[0].u" Register="51" Alu="4" Lut="100" T_Register="51(51)" T_Alu="4(4)" T_Lut="100(100)"/>
+  <SubModule name="gen_enc[1].u" Register="42" Alu="4" Lut="91" T_Register="42(42)" T_Alu="4(4)" T_Lut="91(91)"/>
+  <SubModule name="gen_enc[2].u" Register="44" Alu="4" Lut="91" T_Register="44(44)" T_Alu="4(4)" T_Lut="91(91)"/>
+  <SubModule name="u_ser" Register="30" T_Register="30(30)"/>
+ </SubModule>
+</Module>

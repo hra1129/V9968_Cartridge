@@ -1,0 +1,18 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW2AR-18C" pn="GW2AR-LV18QN88C8/I7">gw2ar18c-000</Device>
+    <FileList>
+        <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
+        <File path="src/gowin_rpll2/gowin_rpll2.v" type="file.verilog" enable="1"/>
+        <File path="src/sound/sound.v" type="file.verilog" enable="1"/>
+        <File path="src/tangnano20k_vdp_cartridge.v" type="file.verilog" enable="1"/>
+        <File path="src/hdmi_tx/src/hdmi_tx_gw.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/hdmi_tx/src/video_syncgen.vhd" type="file.vhdl" enable="1"/>
+        <File path="src/tangnano20k_vdp_cartridge.cst" type="file.cst" enable="1"/>
+        <File path="src/v9958/vdp.vsdx" type="file.other" enable="1"/>
+        <File path="src/video_out/video_out.vsdx" type="file.other" enable="1"/>
+    </FileList>
+</Project>
