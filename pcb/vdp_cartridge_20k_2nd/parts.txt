@@ -1,7 +1,7 @@
 R4, R5 ....... 3.3Kohm
 R2 ........... 10Kohm
 Q1, Q2, Q3 ... TO236AB (MOSFET Nch)
-U1 ........... CLOCK 14.318180MHz
+U1 ........... CLOCK 14.318180MHz or 28.63636MHz (production\bom.csv is 28.63636MHz)
 C3 ........... 15pF
 C1 ........... N/A
 C2-C9 ........ 0.1uF
