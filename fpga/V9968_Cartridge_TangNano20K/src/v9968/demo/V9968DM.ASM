@@ -68,8 +68,8 @@ screen5::
 			xor		a, a
 			ld		e, 18
 			call	write_control_register
-			; R#20 = 0xFF
-			ld		a, 0xFF						; Sprite mode3, Extended palette mode, High speed VDP command
+			; R#20 = 0x9F
+			ld		a, 0x9F						; Sprite mode3, Extended palette mode, High speed VDP command
 			ld		e, 20
 			call	write_control_register
 			; R#23 = 0

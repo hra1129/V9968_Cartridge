@@ -71,7 +71,7 @@ void set_screen5( void ) {
 		11, 0,			//	Sprite Attribute Table(H)
 		18, 0,			//	Set Adjust
 		19, 0,			//	Interrupt line
-		20, 0xFF,		//	Mode5
+		20, 0x9F,		//	Mode5
 		21, 0,			//	Mode6
 		23, 0,			//	Display Offset
 		25, 0,			//	Mode4
