@@ -67,7 +67,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Tool Version</td>
-<td>V1.9.11.02 (64-bit)</td>
+<td>V1.9.12.02_SP2 (64-bit)</td>
 </tr>
 <tr>
 <td class="label">Part Number</td>
@@ -83,12 +83,12 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Tue Jun  2 06:39:06 2026
+<td>Tue Jun  2 20:59:12 2026
 </td>
 </tr>
 <tr>
 <td class="label">Legal Announcement</td>
-<td>Copyright (C)2014-2025 Gowin Semiconductor Corporation. All rights reserved.</td>
+<td>Copyright (C)2014-2026 Gowin Semiconductor Corporation. All rights reserved.</td>
 </tr>
 </table>
 <h1><a name="PnR_Details">PnR Details</a></h1>
@@ -98,23 +98,23 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td class="label">Place & Route Process</td>
 <td>Running placement:
    Placement Phase 0: CPU time = 0h 0m 1s, Elapsed time = 0h 0m 1s
-   Placement Phase 1: CPU time = 0h 0m 0.331s, Elapsed time = 0h 0m 0.331s
-   Placement Phase 2: CPU time = 0h 0m 3s, Elapsed time = 0h 0m 3s
-   Placement Phase 3: CPU time = 0h 0m 4s, Elapsed time = 0h 0m 4s
-   Total Placement: CPU time = 0h 0m 8s, Elapsed time = 0h 0m 8s
+   Placement Phase 1: CPU time = 0h 0m 0.387s, Elapsed time = 0h 0m 0.387s
+   Placement Phase 2: CPU time = 0h 0m 5s, Elapsed time = 0h 0m 5s
+   Placement Phase 3: CPU time = 0h 0m 7s, Elapsed time = 0h 0m 7s
+   Total Placement: CPU time = 0h 0m 14s, Elapsed time = 0h 0m 14s
 Running routing:
-   Routing Phase 0: CPU time = 0h 0m 0.005s, Elapsed time = 0h 0m 0.005s
-   Routing Phase 1: CPU time = 0h 0m 0.363s, Elapsed time = 0h 0m 0.363s
-   Routing Phase 2: CPU time = 0h 0m 7s, Elapsed time = 0h 0m 7s
+   Routing Phase 0: CPU time = 0h 0m 0.007s, Elapsed time = 0h 0m 0.007s
+   Routing Phase 1: CPU time = 0h 0m 0.471s, Elapsed time = 0h 0m 0.472s
+   Routing Phase 2: CPU time = 0h 0m 8s, Elapsed time = 0h 0m 8s
    Routing Phase 3: CPU time = 0h 0m 0s, Elapsed time = 0h 0m 0s
-   Total Routing: CPU time = 0h 0m 7s, Elapsed time = 0h 0m 7s
+   Total Routing: CPU time = 0h 0m 8s, Elapsed time = 0h 0m 8s
 Generate output files:
    CPU time = 0h 0m 2s, Elapsed time = 0h 0m 2s
 </td>
 </tr>
 <tr>
 <td class="label">Total Time and Memory Usage</td>
-<td>CPU time = 0h 0m 17s, Elapsed time = 0h 0m 17s, Peak memory usage = 658MB</td>
+<td>CPU time = 0h 0m 24s, Elapsed time = 0h 0m 24s, Peak memory usage = 548MB</td>
 </tr>
 </table>
 <br/>
@@ -129,22 +129,22 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Logic</td>
-<td>6984/20736</td>
+<td>7047/20736</td>
 <td>34%</td>
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --LUT,ALU,ROM16</td>
-<td>6852(6007 LUT, 845 ALU, 0 ROM16)</td>
+<td>6957(6112 LUT, 845 ALU, 0 ROM16)</td>
 <td>-</td>
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --SSRAM(RAM16)</td>
-<td>22</td>
+<td>15</td>
 <td>-</td>
 </tr>
 <tr>
 <td class="label">Register</td>
-<td>4026/15915</td>
+<td>4105/15915</td>
 <td>26%</td>
 </tr>
 <tr>
@@ -154,7 +154,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --Logic Register as FF</td>
-<td>3955/15552</td>
+<td>4034/15552</td>
 <td>26%</td>
 </tr>
 <tr>
@@ -169,8 +169,8 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">CLS</td>
-<td>5394/10368</td>
-<td>53%</td>
+<td>5541/10368</td>
+<td>54%</td>
 </tr>
 <tr>
 <td class="label">I/O Port</td>
@@ -261,13 +261,13 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">PRIMARY</td>
-<td>3/8</td>
-<td>38%</td>
+<td>4/8</td>
+<td>50%</td>
 </tr>
 <tr>
 <td class="label">LW</td>
-<td>6/8</td>
-<td>75%</td>
+<td>5/8</td>
+<td>63%</td>
 </tr>
 <tr>
 <td class="label">GCLK_PIN</td>
@@ -299,19 +299,19 @@ Generate output files:
 <td> BR BL</td>
 </tr>
 <tr>
-<td class="label">O_sdram_clk_d</td>
+<td class="label">clk85m</td>
 <td>PRIMARY</td>
 <td> TR TL BR BL</td>
+</tr>
+<tr>
+<td class="label">O_sdram_clk_d</td>
+<td>PRIMARY</td>
+<td> TR TL</td>
 </tr>
 <tr>
 <td class="label">clk42m</td>
 <td>PRIMARY</td>
 <td> BR BL</td>
-</tr>
-<tr>
-<td class="label">ff_reset_n2</td>
-<td>LW</td>
-<td> -</td>
 </tr>
 <tr>
 <td class="label">ff_reset2_n2</td>
@@ -811,10 +811,29 @@ Generate output files:
 <tr>
 <td class="label">tmds_clk_p</td>
 <td>tmds_clk_n</td>
-<td>33,34/5</td>
+<td>33/5</td>
 <td>Y</td>
 <td>out</td>
-<td>IOB24</td>
+<td>IOB24[A]</td>
+<td>-</td>
+<td>LVDS25</td>
+<td>3.5</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td class="label">tmds_clk_n</td>
+<td>tmds_clk_p</td>
+<td>34/5</td>
+<td>Y</td>
+<td>out</td>
+<td>IOB24[B]</td>
 <td>-</td>
 <td>LVDS25</td>
 <td>3.5</td>
@@ -830,10 +849,10 @@ Generate output files:
 <tr>
 <td class="label">tmds_d_p[0]</td>
 <td>tmds_d_n[0]</td>
-<td>35,36/4</td>
+<td>35/4</td>
 <td>Y</td>
 <td>out</td>
-<td>IOB30</td>
+<td>IOB30[A]</td>
 <td>GCLKT_4</td>
 <td>LVDS25</td>
 <td>3.5</td>
@@ -849,10 +868,10 @@ Generate output files:
 <tr>
 <td class="label">tmds_d_p[1]</td>
 <td>tmds_d_n[1]</td>
-<td>37,38/4</td>
+<td>37/4</td>
 <td>Y</td>
 <td>out</td>
-<td>IOB34</td>
+<td>IOB34[A]</td>
 <td>-</td>
 <td>LVDS25</td>
 <td>3.5</td>
@@ -868,10 +887,67 @@ Generate output files:
 <tr>
 <td class="label">tmds_d_p[2]</td>
 <td>tmds_d_n[2]</td>
-<td>39,40/4</td>
+<td>39/4</td>
 <td>Y</td>
 <td>out</td>
-<td>IOB40</td>
+<td>IOB40[A]</td>
+<td>-</td>
+<td>LVDS25</td>
+<td>3.5</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td class="label">tmds_d_n[0]</td>
+<td>tmds_d_p[0]</td>
+<td>36/4</td>
+<td>Y</td>
+<td>out</td>
+<td>IOB30[B]</td>
+<td>GCLKC_4</td>
+<td>LVDS25</td>
+<td>3.5</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td class="label">tmds_d_n[1]</td>
+<td>tmds_d_p[1]</td>
+<td>38/4</td>
+<td>Y</td>
+<td>out</td>
+<td>IOB34[B]</td>
+<td>-</td>
+<td>LVDS25</td>
+<td>3.5</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td class="label">tmds_d_n[2]</td>
+<td>tmds_d_p[2]</td>
+<td>40/4</td>
+<td>Y</td>
+<td>out</td>
+<td>IOB40[B]</td>
 <td>-</td>
 <td>LVDS25</td>
 <td>3.5</td>

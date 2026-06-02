@@ -687,7 +687,8 @@ module vdp_command (
 			ff_512pixel <= 1'b0;
 		end
 		else if( ff_start ) begin
-			ff_sx_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_lrmm || ff_command == c_srch);
+			//	SX のオーバーフロー判定 (LRMM は意図的に外してある)
+			ff_sx_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_srch);
 			ff_sy_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_lrmm);
 
 			ff_dx_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
