@@ -61,7 +61,6 @@ module tangnano20k_vdp_cartridge (
 	reg				ff_reset2_n0 = 1'b0;
 	reg				ff_reset2_n1 = 1'b0;
 	reg				ff_reset2_n2 = 1'b0;
-	reg				ff_reset2_n3 = 1'b0;
 	wire			pll_lock215;
 	wire			pll_lock85;
 	wire			clk42m;				//	42.95454MHz
@@ -126,15 +125,14 @@ module tangnano20k_vdp_cartridge (
 		ff_reset_n2		<= ff_reset_n1;
 	end
 
-	always @( posedge clk14m ) begin
+	always @( posedge clk42m ) begin
 		ff_reset2_n0	<= slot_reset_n;
 		ff_reset2_n1	<= ff_reset2_n0;
 		ff_reset2_n2	<= ff_reset2_n1;
-		ff_reset2_n3	<= ff_reset2_n2;
 	end
 
 	assign reset_n	= ff_reset_n2;
-	assign reset_n2	= ff_reset2_n3;
+	assign reset_n2	= ff_reset2_n2;
 
 	// --------------------------------------------------------------------
 	//	clock

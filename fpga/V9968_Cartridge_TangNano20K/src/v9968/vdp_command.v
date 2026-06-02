@@ -494,12 +494,16 @@ module vdp_command (
 		end
 	end
 
+	// ------------------------------------------------------------------------
+	//	LRMMコマンドにおける、参照座標の Y方向走査
+	//
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_sx2 <= 20'd0;
 			ff_sy2 <= 21'd0;
 		end
 		else if( ff_start ) begin
+			//	コマンド実行開始時
 			ff_sx2	<= { reg_sx, 8'd0 };
 			if( ff_command == c_lfmm ) begin
 				ff_sy2	<= { 2'd0, ff_dy, 8'd0 };
@@ -687,11 +691,11 @@ module vdp_command (
 			ff_sy_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmcm || ff_command == c_lrmm);
 
 			ff_dx_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
-							   ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
-							   ff_command == c_line);
+							 ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
+							 ff_command == c_line);
 			ff_dy_active <= (ff_command == c_lmmm || ff_command == c_hmmm || ff_command == c_ymmm || ff_command == c_lmmc || ff_command == c_hmmc || 
-							   ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
-							   ff_command == c_line);
+							 ff_command == c_lmmv || ff_command == c_hmmv || ff_command == c_lrmm || ff_command == c_lfmc || ff_command == c_lfmm ||
+							 ff_command == c_line);
 			ff_512pixel <= w_512pixel;
 		end
 	end
