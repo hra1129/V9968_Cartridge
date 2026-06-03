@@ -320,7 +320,7 @@ module vdp_timing_control_screen_mode (
 	assign w_color_g1					= { reg_color_table_base, 1'b0, ff_next_vram0[7:3] };
 	assign w_color_g23					= { reg_color_table_base[17:13], (pixel_pos_y[7:6] & reg_color_table_base[12:11]), (ff_next_vram0[7:3] & reg_color_table_base[10:6]), ff_next_vram0[2:0], pixel_pos_y[2:0] };
 	assign w_color_gm					= { reg_pattern_generator_table_base, ff_next_vram0, pixel_pos_y[4:2] };
-	assign w_color_t2					= { reg_color_table_base[17:9], (reg_color_table_base[8:6] & w_pattern_name_t12_pre[10:8]), w_pattern_name_t12_pre[7:3] };
+	assign w_color_t2					= { reg_color_table_base[17:9], (reg_color_table_base[8:6] & w_pattern_name_t12_pre[10:8]), w_pattern_name_t12_pre[7:2] };
 
 	// --------------------------------------------------------------------
 	//	VRAM read access request

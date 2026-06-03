@@ -354,7 +354,7 @@ module vdp_timing_control_ssg (
 		end
 	end
 
-	assign w_10frame			= (ff_blink_base == 4'd9);
+	assign w_10frame			= (ff_blink_base == 4'd4);
 	assign w_next_blink_counter	= ff_interleaving_page ? reg_blink_period[7:4]: reg_blink_period[3:0];
 
 	always @( posedge clk ) begin
