@@ -82,6 +82,7 @@ module vdp_sprite_info_collect (
 	//	to makeup_pixel
 	output		[3:0]	makeup_plane,
 	output		[7:0]	color,
+	output		[3:0]	palette_set,
 	output		[9:0]	plane_x,
 	output		[7:0]	mgx,
 	output				color_plane_x_en,
@@ -170,6 +171,22 @@ module vdp_sprite_info_collect (
 		end
 	end
 
+	// ---------------------------------------------------------
+	//	Attribute (ff_selected_q = selected_attribute@vdp_sprite_select_visible_planes)
+	//		Sptite Mode1 and Mode2
+	//			[ 7: 0] ... Y
+	//			[15: 8] ... X
+	//			[23:16] ... Pattern
+	//			[31:24] ... Color
+	//			[37:32] ... Plane#
+	//		Sprite Mode3
+	//			[ 7: 0] ... Y
+	//			[15:14] ... bit shift
+	//			[23:16] ... Magnify Y
+	//			[27:24] ... Palette Set#
+	//			[28] ...... reverse X
+	//			[29] ...... Reverse Y
+	//
 	assign w_selected_plane_num			= ff_selected_q[37:32];
 	assign w_selected_color				= ff_selected_q[31:24];
 	assign w_selected_m12_pattern		= ff_selected_q[23:16];
@@ -351,7 +368,8 @@ module vdp_sprite_info_collect (
 	assign vram_valid		= ff_vram_valid;
 
 	assign makeup_plane		= ff_current_plane[3:0];
-	assign color			= (reg_sprite_mode3 || !sprite_mode2) ? w_selected_color: vram_rdata8;
+	assign color			= (!reg_sprite_mode3 && sprite_mode2) ? vram_rdata8 : w_selected_color;
+	assign palette_set		= w_selected_m3_palette_set;
 	assign plane_x			= ff_active ? (reg_sprite_mode3 ? w_selected_m3_x: { 2'd0, w_selected_m12_x }) : 10'd0;
 	assign mgx				= ff_active ? w_selected_m3_mgx : 8'd0;
 	assign color_plane_x_en	= (ff_active && w_sub_phase == 4'd15 && ff_state == 2'd1);

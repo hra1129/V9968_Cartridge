@@ -67,6 +67,7 @@ module vdp_sprite_makeup_pixel (
 	input				reg_display_on,
 	input				reg_color0_opaque,
 	input				reg_sprite_magify,
+	input				reg_ext_palette_mode,
 	input				reg_sprite_16x16,
 	input				reg_sprite_mode3,
 	//	from select_visible_planes
@@ -75,6 +76,7 @@ module vdp_sprite_makeup_pixel (
 	input		[3:0]	makeup_plane,
 	input		[9:0]	plane_x,
 	input		[7:0]	color,
+	input		[3:0]	palette_set,
 	input		[7:0]	info_mgx,
 	input				color_plane_x_en,
 	input		[31:0]	pattern,
@@ -117,23 +119,23 @@ module vdp_sprite_makeup_pixel (
 	wire		[7:0]	w_read_pattern12;
 	wire		[63:0]	w_pattern;
 	wire		[3:0]	w_sample_x;
-	reg			[7:0]	ff_color0;
-	reg			[7:0]	ff_color1;
-	reg			[7:0]	ff_color2;
-	reg			[7:0]	ff_color3;
-	reg			[7:0]	ff_color4;
-	reg			[7:0]	ff_color5;
-	reg			[7:0]	ff_color6;
-	reg			[7:0]	ff_color7;
-	reg			[7:0]	ff_color8;
-	reg			[7:0]	ff_color9;
-	reg			[7:0]	ff_color10;
-	reg			[7:0]	ff_color11;
-	reg			[7:0]	ff_color12;
-	reg			[7:0]	ff_color13;
-	reg			[7:0]	ff_color14;
-	reg			[7:0]	ff_color15;
-	wire		[7:0]	w_color;
+	reg			[11:0]	ff_color0;
+	reg			[11:0]	ff_color1;
+	reg			[11:0]	ff_color2;
+	reg			[11:0]	ff_color3;
+	reg			[11:0]	ff_color4;
+	reg			[11:0]	ff_color5;
+	reg			[11:0]	ff_color6;
+	reg			[11:0]	ff_color7;
+	reg			[11:0]	ff_color8;
+	reg			[11:0]	ff_color9;
+	reg			[11:0]	ff_color10;
+	reg			[11:0]	ff_color11;
+	reg			[11:0]	ff_color12;
+	reg			[11:0]	ff_color13;
+	reg			[11:0]	ff_color14;
+	reg			[11:0]	ff_color15;
+	wire		[11:0]	w_color;
 	reg			[9:0]	ff_x0;
 	reg			[9:0]	ff_x1;
 	reg			[9:0]	ff_x2;
@@ -202,9 +204,9 @@ module vdp_sprite_makeup_pixel (
 	reg					ff_sprite_en1;
 	reg					ff_sprite_en2;
 	reg					ff_sprite_en3;
-	reg			[7:0]	ff_color_1;
-	reg			[7:0]	ff_color_2;
-	reg			[7:0]	ff_color_3;
+	reg			[11:0]	ff_color_1;
+	reg			[11:0]	ff_color_2;
+	reg			[11:0]	ff_color_3;
 	reg			[3:0]	ff_bit_sel12_1;
 	reg			[3:0]	ff_bit_sel12_2;
 	reg			[3:0]	ff_bit_sel12_3;
@@ -333,42 +335,42 @@ module vdp_sprite_makeup_pixel (
 
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
-			ff_color0  <= 8'd0;
-			ff_color1  <= 8'd0;
-			ff_color2  <= 8'd0;
-			ff_color3  <= 8'd0;
-			ff_color4  <= 8'd0;
-			ff_color5  <= 8'd0;
-			ff_color6  <= 8'd0;
-			ff_color7  <= 8'd0;
-			ff_color8  <= 8'd0;
-			ff_color9  <= 8'd0;
-			ff_color10 <= 8'd0;
-			ff_color11 <= 8'd0;
-			ff_color12 <= 8'd0;
-			ff_color13 <= 8'd0;
-			ff_color14 <= 8'd0;
-			ff_color15 <= 8'd0;
+			ff_color0  <= 12'd0;
+			ff_color1  <= 12'd0;
+			ff_color2  <= 12'd0;
+			ff_color3  <= 12'd0;
+			ff_color4  <= 12'd0;
+			ff_color5  <= 12'd0;
+			ff_color6  <= 12'd0;
+			ff_color7  <= 12'd0;
+			ff_color8  <= 12'd0;
+			ff_color9  <= 12'd0;
+			ff_color10 <= 12'd0;
+			ff_color11 <= 12'd0;
+			ff_color12 <= 12'd0;
+			ff_color13 <= 12'd0;
+			ff_color14 <= 12'd0;
+			ff_color15 <= 12'd0;
 		end
 		else if( color_plane_x_en ) begin
 			case( makeup_plane )
-			4'd0:		ff_color0	<= color;
-			4'd1:		ff_color1	<= color;
-			4'd2:		ff_color2	<= color;
-			4'd3:		ff_color3	<= color;
-			4'd4:		ff_color4	<= color;
-			4'd5:		ff_color5	<= color;
-			4'd6:		ff_color6	<= color;
-			4'd7:		ff_color7	<= color;
-			4'd8:		ff_color8	<= color;
-			4'd9:		ff_color9	<= color;
-			4'd10:		ff_color10	<= color;
-			4'd11:		ff_color11	<= color;
-			4'd12:		ff_color12	<= color;
-			4'd13:		ff_color13	<= color;
-			4'd14:		ff_color14	<= color;
-			4'd15:		ff_color15	<= color;
-			default:	ff_color0	<= color;
+			4'd0:		ff_color0	<= { palette_set, color };
+			4'd1:		ff_color1	<= { palette_set, color };
+			4'd2:		ff_color2	<= { palette_set, color };
+			4'd3:		ff_color3	<= { palette_set, color };
+			4'd4:		ff_color4	<= { palette_set, color };
+			4'd5:		ff_color5	<= { palette_set, color };
+			4'd6:		ff_color6	<= { palette_set, color };
+			4'd7:		ff_color7	<= { palette_set, color };
+			4'd8:		ff_color8	<= { palette_set, color };
+			4'd9:		ff_color9	<= { palette_set, color };
+			4'd10:		ff_color10	<= { palette_set, color };
+			4'd11:		ff_color11	<= { palette_set, color };
+			4'd12:		ff_color12	<= { palette_set, color };
+			4'd13:		ff_color13	<= { palette_set, color };
+			4'd14:		ff_color14	<= { palette_set, color };
+			4'd15:		ff_color15	<= { palette_set, color };
+			default:	ff_color0	<= { palette_set, color };
 			endcase
 		end
 	end
@@ -568,6 +570,46 @@ module vdp_sprite_makeup_pixel (
 		endcase
 	endfunction
 
+	function [11:0] func_12bit_selector(
+		input	[3:0]	current_plane,
+		input	[11:0]	byte0,
+		input	[11:0]	byte1,
+		input	[11:0]	byte2,
+		input	[11:0]	byte3,
+		input	[11:0]	byte4,
+		input	[11:0]	byte5,
+		input	[11:0]	byte6,
+		input	[11:0]	byte7,
+		input	[11:0]	byte8,
+		input	[11:0]	byte9,
+		input	[11:0]	byte10,
+		input	[11:0]	byte11,
+		input	[11:0]	byte12,
+		input	[11:0]	byte13,
+		input	[11:0]	byte14,
+		input	[11:0]	byte15
+	);
+		case( current_plane )
+		4'd0:		func_12bit_selector = byte0;
+		4'd1:		func_12bit_selector = byte1;
+		4'd2:		func_12bit_selector = byte2;
+		4'd3:		func_12bit_selector = byte3;
+		4'd4:		func_12bit_selector = byte4;
+		4'd5:		func_12bit_selector = byte5;
+		4'd6:		func_12bit_selector = byte6;
+		4'd7:		func_12bit_selector = byte7;
+		4'd8:		func_12bit_selector = byte8;
+		4'd9:		func_12bit_selector = byte9;
+		4'd10:		func_12bit_selector = byte10;
+		4'd11:		func_12bit_selector = byte11;
+		4'd12:		func_12bit_selector = byte12;
+		4'd13:		func_12bit_selector = byte13;
+		4'd14:		func_12bit_selector = byte14;
+		4'd15:		func_12bit_selector = byte15;
+		default:	func_12bit_selector = byte0;
+		endcase
+	endfunction
+
 	function [9:0] func_10bit_selector(
 		input	[3:0]	current_plane,
 		input	[9:0]	num0,
@@ -651,7 +693,7 @@ module vdp_sprite_makeup_pixel (
 	// --------------------------------------------------------------------
 	//	w_sub_phase: 0
 	// --------------------------------------------------------------------
-	assign w_color		= func_byte_selector(
+	assign w_color		= func_12bit_selector(
 			ff_current_plane,
 			ff_color0,
 			ff_color1,
@@ -821,7 +863,7 @@ module vdp_sprite_makeup_pixel (
 			if( w_pattern_m3 != 4'd0 ) begin
 				ff_color_en			<= ff_sprite_en3 & ff_active3 & screen_v_active;
 				ff_color			<= w_pattern_m3;
-				ff_palette_set		<= ff_color_3[3:0];
+				ff_palette_set		<= ff_color_3[11:8];
 				ff_transparent		<= ff_color_3[7:6];
 			end
 			else begin
@@ -839,7 +881,7 @@ module vdp_sprite_makeup_pixel (
 			ff_color			<= ff_color_3[3:0];
 			ff_color_cc			<= ff_color_3[6];
 			ff_color_ic			<= ff_color_3[5];
-			ff_palette_set		<= 4'd0;
+			ff_palette_set		<= (sprite_mode2 && reg_ext_palette_mode) ? ff_color_3[11:8] : 4'd0;
 			ff_transparent		<= 2'd0;
 		end
 	end

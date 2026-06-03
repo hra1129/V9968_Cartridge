@@ -394,7 +394,8 @@ module vdp (
 		.reg_sprite_mode3							( reg_sprite_mode3							),
 		.reg_sprite16_mode							( reg_sprite16_mode							),
 		.reg_flat_interlace_mode					( reg_flat_interlace_mode					),
-		.reg_sprite_priority_shuffle				( reg_sprite_priority_shuffle				)
+		.reg_sprite_priority_shuffle				( reg_sprite_priority_shuffle				),
+		.reg_ext_palette_mode						( reg_ext_palette_mode						)
 	);
 
 	// --------------------------------------------------------------------
