@@ -594,8 +594,8 @@ module vdp_timing_control_screen_mode (
 	end
 
 	assign w_blink_pattern	= (ff_pos_x[1:0] == 2'd0) ? ff_next_vram2[7:6]:
-	                      	  (ff_pos_x[1:0] == 2'd0) ? ff_next_vram2[5:4]:
-	                      	  (ff_pos_x[1:0] == 2'd0) ? ff_next_vram2[3:2]: ff_next_vram2[1:0];
+	                      	  (ff_pos_x[1:0] == 2'd1) ? ff_next_vram2[5:4]:
+	                      	  (ff_pos_x[1:0] == 2'd2) ? ff_next_vram2[3:2]: ff_next_vram2[1:0];
 	assign w_blink			= blink ? w_blink_pattern: 2'b00;
 
 	// --------------------------------------------------------------------
