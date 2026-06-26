@@ -7,7 +7,6 @@ Running placement......
 [10%] Placement Phase 0 completed
 [20%] Placement Phase 1 completed
 [30%] Placement Phase 2 completed
-WARN  (TA1132) :  'u_clkdiv/clkdiv_inst/CLKOUT.default_gen_clk' was determined to be a clock but was not created.
 [50%] Placement Phase 3 completed
 Running routing......
 [60%] Routing Phase 0 completed
@@ -26,5 +25,5 @@ Generate file "C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9
 Generate file "C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.rpt.html" completed
 Generate file "C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.rpt.txt" completed
 Generate file "C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\tangnano20k_vdp_cartridge.tr.html" completed
-Fri Jun  5 06:16:15 2026
+Fri Jun 26 20:46:59 2026
 

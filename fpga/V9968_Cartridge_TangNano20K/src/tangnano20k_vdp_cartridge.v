@@ -55,12 +55,15 @@ module tangnano20k_vdp_cartridge (
 	output	[ 1:0]	O_sdram_ba,		// two banks
 	output	[ 3:0]	O_sdram_dqm		// data mask
 );
-	reg				ff_reset_n0 = 1'b0;
-	reg				ff_reset_n1 = 1'b0;
-	reg				ff_reset_n2 = 1'b0;
-	reg				ff_reset2_n0 = 1'b0;
-	reg				ff_reset2_n1 = 1'b0;
-	reg				ff_reset2_n2 = 1'b0;
+	reg				ff_reset_n0 = 1'b0;		/* synthesis syn_preserve = 1 */
+	reg				ff_reset_n1 = 1'b0;		/* synthesis syn_preserve = 1 */
+	reg				ff_reset_n2 = 1'b0;		/* synthesis syn_preserve = 1 */
+	reg				ff_reset2_n0 = 1'b0;	/* synthesis syn_preserve = 1 */
+	reg				ff_reset2_n1 = 1'b0;	/* synthesis syn_preserve = 1 */
+	reg				ff_reset2_n2 = 1'b0;	/* synthesis syn_preserve = 1 */
+	reg				ff_reset3_n0 = 1'b0;	/* synthesis syn_preserve = 1 */
+	reg				ff_reset3_n1 = 1'b0;	/* synthesis syn_preserve = 1 */
+	reg				ff_reset3_n2 = 1'b0;	/* synthesis syn_preserve = 1 */
 	wire			pll_lock215;
 	wire			pll_lock85;
 	wire			clk42m;				//	42.95454MHz
@@ -69,6 +72,7 @@ module tangnano20k_vdp_cartridge (
 	wire			clk215m;			//	214.7727MHz
 	wire			reset_n;
 	wire			reset_n2;
+	wire			reset_n3;
 	wire	[2:0]	w_bus_address;
 	wire			w_bus_ioreq;
 	wire			w_bus_write;
@@ -131,8 +135,15 @@ module tangnano20k_vdp_cartridge (
 		ff_reset2_n2	<= ff_reset2_n1;
 	end
 
+	always @( posedge clk85m ) begin
+		ff_reset3_n0	<= slot_reset_n;
+		ff_reset3_n1	<= ff_reset3_n0;
+		ff_reset3_n2	<= ff_reset3_n1;
+	end
+
 	assign reset_n	= ff_reset_n2;
 	assign reset_n2	= ff_reset2_n2;
+	assign reset_n3	= ff_reset3_n2;
 
 	// --------------------------------------------------------------------
 	//	clock
@@ -190,7 +201,7 @@ module tangnano20k_vdp_cartridge (
 	//	V9958 clone
 	// --------------------------------------------------------------------
 	vdp u_v9958 (
-		.reset_n			( reset_n					),
+		.reset_n			( reset_n3					),
 		.clk				( clk85m					),
 		.initial_busy		( w_sdram_init_busy			),
 		.bus_address		( w_bus_address				),

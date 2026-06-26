@@ -37,6 +37,6 @@
         <File path="src/v9968/vdp_vram_interface.v" type="file.verilog" enable="1"/>
         <File path="src/ws2812_led/ip_ws2812_led.v" type="file.verilog" enable="1"/>
         <File path="src/tangnano20k_vdp_cartridge.cst" type="file.cst" enable="1"/>
-        <File path="src/video_out/video_out.vsdx" type="file.other" enable="1"/>
+        <File path="src/tangnano20k_vdp_cartridge.sdc" type="file.sdc" enable="1"/>
     </FileList>
 </Project>

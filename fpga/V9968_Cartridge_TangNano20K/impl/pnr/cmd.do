@@ -3,6 +3,7 @@
 -pn GW2AR-LV18QN88C8/I7
 -cst C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\tangnano20k_vdp_cartridge.cst
 -cfg C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\impl\pnr\device.cfg
+-sdc C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\tangnano20k_vdp_cartridge.sdc
 -bit
 -tr
 -ph
