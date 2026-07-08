@@ -73,7 +73,7 @@
       "SubInsts" : [
        {
         "InstFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_timing_control.v",
-        "InstLine" : 159,
+        "InstLine" : 160,
         "InstName" : "u_ssg",
         "ModuleFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_timing_control_ssg.v",
         "ModuleLine" : 58,
@@ -81,7 +81,7 @@
        },
        {
         "InstFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_timing_control.v",
-        "InstLine" : 198,
+        "InstLine" : 200,
         "InstName" : "u_screen_mode",
         "ModuleFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_timing_control_screen_mode.v",
         "ModuleLine" : 58,
@@ -89,7 +89,7 @@
        },
        {
         "InstFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_timing_control.v",
-        "InstLine" : 235,
+        "InstLine" : 237,
         "InstName" : "u_sprite",
         "ModuleFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_timing_control_sprite.v",
         "ModuleLine" : 58,
@@ -141,7 +141,7 @@
       "SubInsts" : [
        {
         "InstFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_command.v",
-        "InstLine" : 1894,
+        "InstLine" : 1896,
         "InstName" : "u_cache",
         "ModuleFile" : "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_command_cache.v",
         "ModuleLine" : 57,

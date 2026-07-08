@@ -24,7 +24,7 @@ Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridg
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_timing_control_screen_mode.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_timing_control_sprite.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_timing_control_ssg.v'
-Undeclared symbol 'dot_phase', assumed default net type 'wire'("C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_timing_control_ssg.v":422)
+Undeclared symbol 'dot_phase', assumed default net type 'wire'("C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_timing_control_ssg.v":432)
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_upscan.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_upscan_line_buffer.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_video_double_buffer.v'

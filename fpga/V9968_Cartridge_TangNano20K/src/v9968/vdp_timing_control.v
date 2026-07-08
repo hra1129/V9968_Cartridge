@@ -131,6 +131,7 @@ module vdp_timing_control (
 	input				reg_ext_palette_mode
 );
 	wire		[13:0]	w_screen_pos_x;			//	signed   (Coordinates not affected by scroll register)
+	wire		[13:0]	w_screen_pos_x_clone;	//	signed   (Coordinates not affected by scroll register)
 	wire		[ 9:0]	w_screen_pos_y;			//	signed   (Coordinates not affected by scroll register)
 	wire		[ 8:0]	w_pixel_pos_x;			//	unsigned (Coordinates affected by scroll register)
 	wire		[ 7:0]	w_pixel_pos_y;			//	unsigned (Coordinates affected by scroll register)
@@ -162,6 +163,7 @@ module vdp_timing_control (
 		.h_count									( h_count									),
 		.v_count									( v_count									),
 		.screen_pos_x								( w_screen_pos_x							),
+		.screen_pos_x_clone							( w_screen_pos_x_clone						),
 		.screen_pos_y								( w_screen_pos_y							),
 		.pixel_pos_x								( w_pixel_pos_x								),
 		.pixel_pos_y								( w_pixel_pos_y								),
@@ -198,7 +200,7 @@ module vdp_timing_control (
 	vdp_timing_control_screen_mode u_screen_mode (
 		.reset_n									( reset_n									),
 		.clk										( clk										),
-		.screen_pos_x								( w_screen_pos_x							),
+		.screen_pos_x								( w_screen_pos_x_clone						),
 		.screen_pos_y								( w_screen_pos_y							),
 		.pixel_pos_x								( w_pixel_pos_x								),
 		.pixel_pos_y								( w_pixel_pos_y								),
@@ -235,8 +237,8 @@ module vdp_timing_control (
 	vdp_timing_control_sprite u_sprite (
 		.reset_n									( reset_n									),
 		.clk										( clk										),
-		.screen_pos_x								( screen_pos_x								),
-		.screen_pos_y								( screen_pos_y								),
+		.screen_pos_x								( w_screen_pos_x_clone						),
+		.screen_pos_y								( w_screen_pos_y							),
 		.pixel_pos_y								( w_pixel_pos_y								),
 		.screen_v_active							( w_screen_v_active							),
 		.vram_address								( sprite_vram_address						),

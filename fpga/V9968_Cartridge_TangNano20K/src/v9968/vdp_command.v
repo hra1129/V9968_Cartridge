@@ -158,7 +158,8 @@ module vdp_command (
 	reg			[7:0]	ff_source;
 	wire		[7:0]	w_destination;
 	wire		[7:0]	w_lop_pixel;
-	reg			[9:0]	ff_screen_mode;
+	reg			[9:0]	ff_screen_mode;				/* synthesis syn_preserve = 1 */
+	reg			[9:0]	ff_screen_mode_clone;		/* synthesis syn_preserve = 1 */
 
 	reg			[1:0]	ff_xsel;
 	reg			[11:0]	reg_sx;
@@ -296,15 +297,16 @@ module vdp_command (
 	//	Mode select
 	// --------------------------------------------------------------------
 	always @( posedge clk ) begin
-		ff_screen_mode <= screen_mode;
+		ff_screen_mode			<= screen_mode;
+		ff_screen_mode_clone	<= screen_mode;
 	end
 
 	assign w_effective_mode		= reg_command_enable || ff_fg4 || (ff_screen_mode[c_g4] || ff_screen_mode[c_g5] || ff_screen_mode[c_g6] || ff_screen_mode[c_g7]);
 	assign w_bpp				= (ff_screen_mode[c_g6] || ff_screen_mode[c_g4]) ? c_bpp_4bit:
 	            				  (ff_screen_mode[c_g5]) ? c_bpp_2bit: c_bpp_8bit;
-	assign w_next				= (ff_screen_mode[c_g7] || ff_command[3:2] != 2'b11) ? 10'd1:
-	             				  (ff_screen_mode[c_g5]) ? 10'd4: 10'd2;
-	assign w_512pixel			= (ff_screen_mode[c_g5] || ff_screen_mode[c_g6]);
+	assign w_next				= (ff_screen_mode_clone[c_g7] || ff_command[3:2] != 2'b11) ? 10'd1:
+	             				  (ff_screen_mode_clone[c_g5]) ? 10'd4: 10'd2;
+	assign w_512pixel			= (ff_screen_mode_clone[c_g5] || ff_screen_mode_clone[c_g6]);
 
 	assign vram_access_mask		= ff_mxc;
 
@@ -312,15 +314,15 @@ module vdp_command (
 	//	Address
 	// --------------------------------------------------------------------
 	assign w_sy					= (ff_command == c_lrmm && ff_xhr) ? { ff_sy[20], ff_sy[20:1] }: ff_sy;
-	assign w_address_s_pre		= (ff_screen_mode[c_g4] || ff_fg4) ? { w_sy[18:8], ff_sx[15: 9] }:	// SCREEN5, 128byte/line, 2pixel/byte, 256line * 8page
-	                  			  (ff_screen_mode[c_g5]          ) ? { w_sy[18:8], ff_sx[16:10] }:	// SCREEN6, 128byte/line, 4pixel/byte, 256line * 8page
-	                  			  (ff_screen_mode[c_g6]          ) ? { w_sy[17:8], ff_sx[16: 9] }:	// SCREEN7, 256byte/line, 2pixel/byte, 256line * 4page
-	                  			                                     { w_sy[17:8], ff_sx[15: 8] };	// SCREEN8, 256byte/line, 1pixel/byte, 256line * 4page
+	assign w_address_s_pre		= (ff_screen_mode_clone[c_g4] || ff_fg4) ? { w_sy[18:8], ff_sx[15: 9] }:	// SCREEN5, 128byte/line, 2pixel/byte, 256line * 8page
+	                  			  (ff_screen_mode_clone[c_g5]          ) ? { w_sy[18:8], ff_sx[16:10] }:	// SCREEN6, 128byte/line, 4pixel/byte, 256line * 8page
+	                  			  (ff_screen_mode_clone[c_g6]          ) ? { w_sy[17:8], ff_sx[16: 9] }:	// SCREEN7, 256byte/line, 2pixel/byte, 256line * 4page
+	                  			                           	               { w_sy[17:8], ff_sx[15: 8] };	// SCREEN8, 256byte/line, 1pixel/byte, 256line * 4page
 
-	assign w_address_d_pre		= (ff_screen_mode[c_g4] || ff_fg4) ? { ff_dy[10:0], ff_dx[ 7: 1] }:	// SCREEN5, 128byte/line, 2pixel/byte, 256line * 8page
-	                  			  (ff_screen_mode[c_g5]          ) ? { ff_dy[10:0], ff_dx[ 8: 2] }:	// SCREEN6, 128byte/line, 4pixel/byte, 256line * 8page
-	                  			  (ff_screen_mode[c_g6]          ) ? { ff_dy[ 9:0], ff_dx[ 8: 1] }:	// SCREEN7, 256byte/line, 2pixel/byte, 256line * 4page
-	                  			                                     { ff_dy[ 9:0], ff_dx[ 7: 0] };	// SCREEN8, 256byte/line, 1pixel/byte, 256line * 4page
+	assign w_address_d_pre		= (ff_screen_mode_clone[c_g4] || ff_fg4) ? { ff_dy[10:0], ff_dx[ 7: 1] }:	// SCREEN5, 128byte/line, 2pixel/byte, 256line * 8page
+	                  			  (ff_screen_mode_clone[c_g5]          ) ? { ff_dy[10:0], ff_dx[ 8: 2] }:	// SCREEN6, 128byte/line, 4pixel/byte, 256line * 8page
+	                  			  (ff_screen_mode_clone[c_g6]          ) ? { ff_dy[ 9:0], ff_dx[ 8: 1] }:	// SCREEN7, 256byte/line, 2pixel/byte, 256line * 4page
+	                  			                                           { ff_dy[ 9:0], ff_dx[ 7: 0] };	// SCREEN8, 256byte/line, 1pixel/byte, 256line * 4page
 
 	assign w_address_s			= vram_interleave ? { w_address_s_pre[17], w_address_s_pre[0], w_address_s_pre[16:1] }: w_address_s_pre;
 	assign w_address_d			= vram_interleave ? { w_address_d_pre[17], w_address_d_pre[0], w_address_d_pre[16:1] }: w_address_d_pre;

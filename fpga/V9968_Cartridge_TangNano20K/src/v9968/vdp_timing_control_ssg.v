@@ -63,6 +63,7 @@ module vdp_timing_control_ssg (
 	output		[ 9:0]	v_count,
 
 	output		[13:0]	screen_pos_x,			//	signed   (Coordinates not affected by scroll register)
+	output		[13:0]	screen_pos_x_clone,		//	signed   (Coordinates not affected by scroll register)
 	output		[ 9:0]	screen_pos_y,			//	signed   (Coordinates not affected by scroll register)
 	output		[ 8:0]	pixel_pos_x,			//	unsigned (Coordinates affected by scroll register)
 	output		[ 7:0]	pixel_pos_y,			//	unsigned (Coordinates affected by scroll register)
@@ -110,7 +111,8 @@ module vdp_timing_control_ssg (
 	localparam			c_intr_frame_timing212	= 10'd211;
 	reg			[11:0]	ff_h_count;
 	reg			[12:0]	ff_half_count;
-	reg			[ 9:0]	ff_v_count;
+	reg			[ 9:0]	ff_v_count;					/* synthesis syn_preserve = 1 */
+	reg			[ 9:0]	ff_v_count_clone;			/* synthesis syn_preserve = 1 */
 	reg					ff_line_interrupt_mask;
 	wire				w_h_count_end;
 	wire				w_v_count_end;
@@ -119,7 +121,8 @@ module vdp_timing_control_ssg (
 	wire		[ 9:0]	w_screen_pos_y;
 	wire		[ 9:0]	w_pixel_pos_x;
 	wire		[ 7:0]	w_pixel_pos_y;
-	reg			[13:0]	ff_screen_pos_x;
+	reg			[13:0]	ff_screen_pos_x;			/* synthesis syn_preserve = 1 */
+	reg			[13:0]	ff_screen_pos_x_clone;		/* synthesis syn_preserve = 1 */
 	reg			[ 9:0]	ff_screen_pos_y;
 	reg			[ 8:0]	ff_pixel_pos_x;
 	reg			[ 7:0]	ff_pixel_pos_y;
@@ -141,6 +144,7 @@ module vdp_timing_control_ssg (
 	reg					ff_hsync;
 	reg					ff_vsync;
 	reg					ff_clear_line_interrupt;
+	reg					ff_intr_line;
 
 	assign w_half_line_shift	= ff_field & (reg_interlace_mode | reg_flat_interlace_mode);
 
@@ -221,14 +225,17 @@ module vdp_timing_control_ssg (
 	// --------------------------------------------------------------------
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
-			ff_v_count <= 10'd0;
+			ff_v_count			<= 10'd0;
+			ff_v_count_clone	<= 10'd0;
 		end
 		else if( w_h_count_end ) begin
 			if( w_v_count_end ) begin
-				ff_v_count <= 10'd0;
+				ff_v_count			<= 10'd0;
+				ff_v_count_clone	<= 10'd0;
 			end
 			else begin
-				ff_v_count <= ff_v_count + 10'd1;
+				ff_v_count			<= ff_v_count + 10'd1;	
+				ff_v_count_clone	<= ff_v_count_clone + 10'd1;
 			end
 		end
 	end
@@ -313,7 +320,7 @@ module vdp_timing_control_ssg (
 	end
 
 	assign w_screen_pos_x		= { 1'b0, ff_half_count   } - c_left_pos;
-	assign w_screen_pos_y		= { 1'b0, ff_v_count[9:1] } - ff_top_line + { 6'd0, ~reg_display_adjust[7], reg_display_adjust[6:4] };
+	assign w_screen_pos_y		= { 1'b0, ff_v_count_clone[9:1] } - ff_top_line + { 6'd0, ~reg_display_adjust[7], reg_display_adjust[6:4] };
 
 	assign w_pixel_pos_x		= w_screen_pos_x[12:4] + { ff_horizontal_offset_h, 3'd0 };
 	assign w_pixel_pos_y		= w_screen_pos_y[ 7:0] + reg_vertical_offset;
@@ -404,19 +411,22 @@ module vdp_timing_control_ssg (
 	//	Output assignment
 	// --------------------------------------------------------------------
 	always @( posedge clk ) begin
-		ff_screen_pos_x	<= w_screen_pos_x;
-		ff_screen_pos_y	<= w_screen_pos_y;
-		ff_pixel_pos_x	<= w_pixel_pos_x[8:0];
-		ff_pixel_pos_y	<= w_pixel_pos_y;
+		ff_screen_pos_x			<= w_screen_pos_x;
+		ff_screen_pos_x_clone	<= w_screen_pos_x;
+		ff_screen_pos_y			<= w_screen_pos_y;
+		ff_pixel_pos_x			<= w_pixel_pos_x[8:0];
+		ff_pixel_pos_y			<= w_pixel_pos_y;
+		ff_intr_line			<= ( (w_intr_line_y == { 2'd0, reg_interrupt_line }) && ff_line_interrupt_mask ) ? w_intr_line_timing: 1'b0;
 	end
 
 	assign h_count				= ff_h_count;
-	assign v_count				= ff_v_count;
+	assign v_count				= ff_v_count_clone;
 	assign screen_pos_x			= ff_screen_pos_x;
+	assign screen_pos_x_clone	= ff_screen_pos_x_clone;
 	assign screen_pos_y			= ff_screen_pos_y;
 	assign pixel_pos_x			= ff_pixel_pos_x[8:0];
 	assign pixel_pos_y			= ff_pixel_pos_y;
-	assign intr_line			= ( (w_intr_line_y == { 2'd0, reg_interrupt_line }) && ff_line_interrupt_mask ) ? w_intr_line_timing: 1'b0;
+	assign intr_line			= ff_intr_line;
 	assign intr_frame			= w_intr_frame_timing;
 	assign screen_v_active		= ff_v_active;
 	assign dot_phase			= ff_half_count[0];
