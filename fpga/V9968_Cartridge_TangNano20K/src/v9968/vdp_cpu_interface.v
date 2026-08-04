@@ -257,6 +257,7 @@ module vdp_cpu_interface (
 	reg		[1:0]		ff_button1 = 2'd0;
 	reg		[1:0]		ff_button2 = 2'd0;
 	reg					ff_force_page2 = 1'b0;
+	reg					ff_lock_extregs = 1'b1;
 
 	always @( posedge clk ) begin
 		ff_button1 <= button;
@@ -634,18 +635,22 @@ module vdp_cpu_interface (
 				end
 			8'd20:	//	R#20 = [S16][EVR][ECOM][EPAL][SCOL][ILNS][SVNS][HS]
 				begin
-					ff_command_high_speed_mode <= ff_1st_byte[0];
-					ff_sprite_nonR23_mode <= ff_1st_byte[1];
-					ff_interrupt_line_nonR23_mode <= ff_1st_byte[2];
-					ff_sprite_mode3 <= ff_1st_byte[3];
-					ff_ext_palette_mode <= ff_1st_byte[4];
-					ff_flat_interlace_mode <= ff_1st_byte[5];
-					ff_command_end_interrupt_enable <= ff_1st_byte[6];
-					ff_sprite16_mode <= ff_1st_byte[7];
+					if( !ff_lock_extregs ) begin
+						ff_command_high_speed_mode <= ff_1st_byte[0];
+						ff_sprite_nonR23_mode <= ff_1st_byte[1];
+						ff_interrupt_line_nonR23_mode <= ff_1st_byte[2];
+						ff_sprite_mode3 <= ff_1st_byte[3];
+						ff_ext_palette_mode <= ff_1st_byte[4];
+						ff_flat_interlace_mode <= ff_1st_byte[5];
+						ff_command_end_interrupt_enable <= ff_1st_byte[6];
+						ff_sprite16_mode <= ff_1st_byte[7];
+					end
 				end
 			8'd21:	//	R#21 = [CEIE][N/A][N/A][N/A][N/A][N/A][N/A][N/A]
 				begin
-					ff_v9958_mode <= ff_1st_byte[0];
+					if( !ff_lock_extregs ) begin
+						ff_v9958_mode <= ff_1st_byte[0];
+					end
 				end
 			8'd23:	//	R#23 = [DO7][DO6][DO5][DO4][DO3][DO2][DO1][DO0]
 				begin
@@ -789,7 +794,7 @@ module vdp_cpu_interface (
 				ff_bus_rdata_en	<= 1'b1;
 			end
 			else if( ff_port4 ) begin
-				ff_bus_rdata	<= { 5'd0, ff_command_end_interrupt, ff_line_interrupt, ff_frame_interrupt };
+				ff_bus_rdata	<= { ff_lock_extregs, 4'd0, ff_command_end_interrupt, ff_line_interrupt, ff_frame_interrupt };
 				ff_bus_rdata_en	<= 1'b1;
 			end
 			else begin
@@ -816,6 +821,7 @@ module vdp_cpu_interface (
 			ff_frame_interrupt			<= 1'b0;
 			ff_line_interrupt			<= 1'b0;
 			ff_command_end_interrupt	<= 1'b0;
+			ff_lock_extregs				<= 1'b1;
 		end
 		else if( w_read && ff_port1 ) begin
 			if( ff_status_register_pointer == 4'd0 ) begin
@@ -840,6 +846,7 @@ module vdp_cpu_interface (
 				//	Clear command end interrupt flag
 				ff_command_end_interrupt <= 1'b0;
 			end
+			ff_lock_extregs <= ff_bus_wdata[7];
 		end
 		else begin
 			if( intr_frame ) begin
