@@ -54,10 +54,6 @@
       "diff_pair_dimensions": [],
       "drc_exclusions": [
         [
-          "silk_edge_clearance|168257330|72820000|54f64ec5-c6a0-4fca-bac5-332673b7aaf9|85d063dd-d6f0-4e6c-aed2-3b3832832d8a",
-          ""
-        ],
-        [
           "text_thickness|89200000|84050000|b820ccea-7ede-4f56-9859-b9b093f13be1|00000000-0000-0000-0000-000000000000",
           ""
         ]
