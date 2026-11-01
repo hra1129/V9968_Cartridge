@@ -30,19 +30,17 @@ namespace V9968UpdWin
 
 		private ProgrammerPathForm( string current )
 		{
-			Text = "GOWIN Programmer CLI の指定";
+			Text = UiText.PathFormTitle;
 			FormBorderStyle = FormBorderStyle.FixedDialog;
 			MaximizeBox = false;
 			MinimizeBox = false;
 			StartPosition = FormStartPosition.CenterParent;
 			AutoScaleMode = AutoScaleMode.Font;
-			Font = new Font( "Yu Gothic UI", 9F );
+			Font = new Font( UiText.FontName, 9F );
 			ClientSize = new Size( 560, 170 );
 
 			var message = new Label {
-				Text = "GOWIN Programmer CLI (programmer_cli.exe) が見つかりませんでした。\r\n"
-					+ "GOWIN Programmer のインストール先にある programmer_cli.exe を指定してください。\r\n"
-					+ "例: C:\\Gowin\\Gowin_V1.9.12.03_x64\\Programmer\\bin\\programmer_cli.exe",
+				Text = UiText.PathFormMessage,
 				Location = new Point( 12, 12 ),
 				Size = new Size( 536, 60 ),
 			};
@@ -50,12 +48,12 @@ namespace V9968UpdWin
 			_path.Size = new Size( 446, 23 );
 			_path.Text = current ?? "";
 
-			var browse = new Button { Text = "参照...", Location = new Point( 466, 81 ), Size = new Size( 82, 26 ) };
+			var browse = new Button { Text = UiText.BrowseButton, Location = new Point( 466, 81 ), Size = new Size( 82, 26 ) };
 			browse.Click += OnBrowse;
 
 			var ok = new Button { Text = "OK", Location = new Point( 372, 128 ), Size = new Size( 84, 28 ) };
 			ok.Click += OnOk;
-			var cancel = new Button { Text = "キャンセル", Location = new Point( 464, 128 ), Size = new Size( 84, 28 ), DialogResult = DialogResult.Cancel };
+			var cancel = new Button { Text = UiText.CancelButton, Location = new Point( 464, 128 ), Size = new Size( 84, 28 ), DialogResult = DialogResult.Cancel };
 
 			Controls.AddRange( new Control[] { message, _path, browse, ok, cancel } );
 			AcceptButton = ok;
@@ -65,8 +63,8 @@ namespace V9968UpdWin
 		private void OnBrowse( object sender, EventArgs e )
 		{
 			using( var dialog = new OpenFileDialog() ) {
-				dialog.Title = "programmer_cli.exe を選択";
-				dialog.Filter = "programmer_cli.exe|programmer_cli.exe|実行ファイル (*.exe)|*.exe";
+				dialog.Title = UiText.SelectCliTitle;
+				dialog.Filter = UiText.CliFileFilter;
 				if( File.Exists( _path.Text ) ) {
 					dialog.InitialDirectory = Path.GetDirectoryName( _path.Text );
 				}
@@ -80,7 +78,7 @@ namespace V9968UpdWin
 		{
 			string path = _path.Text.Trim().Trim( '"' );
 			if( !ProgrammerLocator.IsValid( path ) ) {
-				MessageBox.Show( this, "指定されたパスに programmer_cli.exe がありません。", Text,
+				MessageBox.Show( this, UiText.CliNotFoundAtPath, Text,
 					MessageBoxButtons.OK, MessageBoxIcon.Warning );
 				return;
 			}

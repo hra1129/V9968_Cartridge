@@ -54,7 +54,7 @@ namespace V9968UpdWin
 			MaximizeBox = false;
 			StartPosition = FormStartPosition.CenterScreen;
 			AutoScaleMode = AutoScaleMode.Font;
-			Font = new Font( "Yu Gothic UI", 9F );
+			Font = new Font( UiText.FontName, 9F );
 			ClientSize = new Size( 600, 420 );
 			AllowDrop = true;
 			DragEnter += OnDragEnter;
@@ -70,13 +70,13 @@ namespace V9968UpdWin
 			}
 
 			var separator = new Label { BorderStyle = BorderStyle.Fixed3D, Location = new Point( 0, 362 ), Size = new Size( 600, 2 ) };
-			_back.Text = "< 戻る";
+			_back.Text = UiText.BackButton;
 			_back.SetBounds( 296, 378, 90, 28 );
 			_back.Click += OnBack;
-			_next.Text = "次へ >";
+			_next.Text = UiText.NextButton;
 			_next.SetBounds( 392, 378, 90, 28 );
 			_next.Click += OnNext;
-			_close.Text = "キャンセル";
+			_close.Text = UiText.CancelButton;
 			_close.SetBounds( 498, 378, 90, 28 );
 			_close.Click += ( s, e ) => Close();
 			Controls.AddRange( new Control[] { separator, _back, _next, _close } );
@@ -93,9 +93,8 @@ namespace V9968UpdWin
 		private Panel CreateFilePage()
 		{
 			var page = new Panel();
-			page.Controls.Add( Title( "1. 更新ファイルの選択" ) );
-			page.Controls.Add( Caption( "リリースされている V9968 のデザインの V9968CFG.BIN を選択してください。\r\n"
-				+ "パスを直接入力するか、ファイルをこのウィンドウへドロップするか、[参照...] で選択してください。", 20, 56, 560, 44 ) );
+			page.Controls.Add( Title( UiText.FilePageTitle ) );
+			page.Controls.Add( Caption( UiText.FilePageCaption, 20, 56, 560, 44 ) );
 
 			_filePath.SetBounds( 20, 112, 468, 23 );
 			_filePath.AllowDrop = true;
@@ -104,7 +103,7 @@ namespace V9968UpdWin
 			_filePath.TextChanged += ( s, e ) => { _image = null; _fileInfo.Text = ""; };
 			page.Controls.Add( _filePath );
 
-			var browse = new Button { Text = "参照..." };
+			var browse = new Button { Text = UiText.BrowseButton };
 			browse.SetBounds( 496, 111, 84, 26 );
 			browse.Click += OnBrowse;
 			page.Controls.Add( browse );
@@ -117,12 +116,11 @@ namespace V9968UpdWin
 		private Panel CreateConnectPage()
 		{
 			var page = new Panel();
-			page.Controls.Add( Title( "2. V9968 Cartridge の接続" ) );
-			var message = Caption( "V9968 Cartridge を接続してください。", 20, 60, 560, 28 );
+			page.Controls.Add( Title( UiText.ConnectPageTitle ) );
+			var message = Caption( UiText.ConnectPrompt, 20, 60, 560, 28 );
 			message.Font = new Font( Font.FontFamily, 12F, FontStyle.Bold );
 			page.Controls.Add( message );
-			page.Controls.Add( Caption( "Tang Nano 20K の USB コネクタと PC を USB ケーブルで接続してから [次へ] をクリックしてください。\r\n"
-				+ "GOWIN Programmer (GUI) を起動している場合は、終了してから実行してください。", 20, 100, 560, 48 ) );
+			page.Controls.Add( Caption( UiText.ConnectCaption, 20, 100, 560, 48 ) );
 
 			_connectStatus.SetBounds( 20, 160, 560, 70 );
 			_connectStatus.ForeColor = Color.Firebrick;
@@ -131,7 +129,7 @@ namespace V9968UpdWin
 			_cliPathLabel.SetBounds( 20, 300, 470, 40 );
 			_cliPathLabel.ForeColor = SystemColors.GrayText;
 			page.Controls.Add( _cliPathLabel );
-			var change = new LinkLabel { Text = "CLI の変更..." };
+			var change = new LinkLabel { Text = UiText.ChangeCliLink };
 			change.SetBounds( 496, 300, 84, 20 );
 			change.LinkClicked += OnChangeCli;
 			page.Controls.Add( change );
@@ -141,11 +139,10 @@ namespace V9968UpdWin
 		private Panel CreateWritePage()
 		{
 			var page = new Panel();
-			page.Controls.Add( Title( "3. 書込み" ) );
-			page.Controls.Add( Caption( "[書込み開始] をクリックすると、ConfigROM の消去・書込み・ベリファイを行います。\r\n"
-				+ "完了するまで USB ケーブルを抜かないでください。", 20, 52, 560, 40 ) );
+			page.Controls.Add( Title( UiText.WritePageTitle ) );
+			page.Controls.Add( Caption( UiText.WritePageCaption, 20, 52, 560, 40 ) );
 
-			_start.Text = "書込み開始";
+			_start.Text = UiText.StartWriteButton;
 			_start.SetBounds( 20, 100, 120, 30 );
 			_start.Click += OnStart;
 			page.Controls.Add( _start );
@@ -208,7 +205,7 @@ namespace V9968UpdWin
 			_next.Visible = _page < 2;
 			_start.Enabled = !_busy && !_completed;
 			_close.Enabled = !_busy;
-			_close.Text = _completed ? "完了" : "キャンセル";
+			_close.Text = _completed ? UiText.DoneButton : UiText.CancelButton;
 		}
 
 		// ---------------------------------------------------------------------
@@ -230,8 +227,8 @@ namespace V9968UpdWin
 		private void OnBrowse( object sender, EventArgs e )
 		{
 			using( var dialog = new OpenFileDialog() ) {
-				dialog.Title = "V9968CFG.BIN を選択";
-				dialog.Filter = "V9968 Config image (*.bin)|*.bin|すべてのファイル (*.*)|*.*";
+				dialog.Title = UiText.SelectConfigFileTitle;
+				dialog.Filter = UiText.ConfigFileFilter;
 				string current = _filePath.Text.Trim().Trim( '"' );
 				if( File.Exists( current ) ) {
 					dialog.InitialDirectory = Path.GetDirectoryName( current );
@@ -246,13 +243,13 @@ namespace V9968UpdWin
 		{
 			string path = _filePath.Text.Trim().Trim( '"' );
 			if( path.Length == 0 || !File.Exists( path ) ) {
-				ShowError( "ファイルが見つかりません。", "Cannot open the file." );
+				ShowError( UiText.FileNotFound, "Cannot open the file." );
 				return false;
 			}
 			string error;
 			ConfigImage image = ConfigImage.Load( path, out error );
 			if( image == null ) {
-				ShowError( "選択されたファイルは V9968CFG.BIN として使用できません。", error );
+				ShowError( UiText.FileNotUsable, error );
 				return false;
 			}
 			_image = image;
@@ -275,7 +272,7 @@ namespace V9968UpdWin
 		private async Task<bool> CheckConnectionAsync()
 		{
 			_connectStatus.ForeColor = SystemColors.ControlText;
-			_connectStatus.Text = "接続を確認しています...";
+			_connectStatus.Text = UiText.CheckingConnection;
 			SetBusy( true );
 			CliResult scan;
 			try {
@@ -305,7 +302,7 @@ namespace V9968UpdWin
 			_progressText.Text = "";
 			_result.Text = "";
 			_log.Clear();
-			_version.Text = "書き込むバージョン: " + _image.VersionText;
+			_version.Text = UiText.VersionToWrite + _image.VersionText;
 		}
 
 		private async void OnStart( object sender, EventArgs e )
@@ -340,7 +337,7 @@ namespace V9968UpdWin
 				_progress.Complete( ConfigStepEnd );
 
 				AppendLog( "Version update" );
-				_stepName = "バージョン情報";
+				_stepName = UiText.StepVersion;
 				_progress.BeginStep( ConfigStepEnd, VersionStepEnd - ConfigStepEnd, 0.1 );
 				CliResult version = await _cli.WriteBinaryAsync( versionFile, ConfigImage.VersionBlockAddress, OnCliLine );
 				if( !version.Succeeded ) {
@@ -350,21 +347,20 @@ namespace V9968UpdWin
 				_progress.Complete( VersionStepEnd );
 
 				// Reload the FPGA from the updated ConfigROM. Failure here does not affect the written data.
-				_stepName = "FPGA 再起動";
+				_stepName = UiText.StepReprogram;
 				_progress.BeginStep( VersionStepEnd, 100.0 - VersionStepEnd, 0.1 );
 				CliResult reprogram = await _cli.ReprogramAsync( OnCliLine );
 				_progress.Complete( 100.0 );
 				UpdateProgressBar();
 
 				_completed = true;
-				_version.Text = "書き込んだバージョン: " + _image.VersionText;
+				_version.Text = UiText.WrittenVersion + _image.VersionText;
 				_progressText.Text = "Config data has been updated.";
 				_result.ForeColor = Color.DarkGreen;
-				_result.Text = "書き込みが正常に完了しました";
+				_result.Text = UiText.WriteCompleted;
 				if( !reprogram.Succeeded ) {
 					AppendLog( "Reprogram failed: " + reprogram.Tail( 1 ) );
-					MessageBox.Show( this, "書き込みは正常に完了しましたが、FPGA の再起動に失敗しました。\r\n"
-						+ "USB ケーブルを抜き差しして、V9968 Cartridge を再起動してください。",
+					MessageBox.Show( this, UiText.ReprogramFailedMessage,
 						Text, MessageBoxButtons.OK, MessageBoxIcon.Information );
 				}
 			}
@@ -372,7 +368,7 @@ namespace V9968UpdWin
 				_result.ForeColor = Color.Firebrick;
 				_result.Text = "File read error.";
 				AppendLog( ex.Message );
-				ShowError( "一時ファイルの作成に失敗しました。", "File read error.\r\n" + ex.Message );
+				ShowError( UiText.TempFileFailed, "File read error.\r\n" + ex.Message );
 			}
 			finally {
 				_timer.Stop();
@@ -401,15 +397,13 @@ namespace V9968UpdWin
 			}
 			_result.ForeColor = Color.Firebrick;
 			_result.Text = english;
-			_progressText.Text = configStep ? "Config data の書き込みに失敗しました。バージョン領域は更新していません。"
-											: "バージョン情報の書き込みに失敗しました。";
+			_progressText.Text = configStep ? UiText.ConfigWriteFailed
+											: UiText.VersionWriteFailed;
 			AppendLog( english );
 			AppendLog( "exit code = " + result.ExitCode );
 			AppendLog( "command   = " + result.CommandLine );
 
-			ShowError( "書き込みに失敗しました。\r\n"
-				+ "Flash 内の ConfigROM が未完成の可能性があるため、再度書込みを試行するか、\r\n"
-				+ "GOWIN Programmer で書き込んでください。",
+			ShowError( UiText.WriteFailedMessage,
 				english + "\r\n\r\n" + result.Tail( 6 ) );
 		}
 
@@ -437,10 +431,10 @@ namespace V9968UpdWin
 			}
 			string phase;
 			switch( _progress.Phase ) {
-			case CliPhase.Erasing:		phase = "消去中";		break;
-			case CliPhase.Programming:	phase = "書込み中";		break;
-			case CliPhase.Verifying:	phase = "ベリファイ中";	break;
-			default:					phase = "準備中";		break;
+			case CliPhase.Erasing:		phase = UiText.PhaseErasing;		break;
+			case CliPhase.Programming:	phase = UiText.PhaseWriting;		break;
+			case CliPhase.Verifying:	phase = UiText.PhaseVerifying;	break;
+			default:					phase = UiText.PhasePreparing;		break;
 			}
 			_progressText.Text = string.Format( "{0:0}%  {1} {2}...", value, _stepName, phase );
 		}
@@ -477,9 +471,9 @@ namespace V9968UpdWin
 			UpdateButtons();
 		}
 
-		private void ShowError( string japanese, string english )
+		private void ShowError( string message, string detail )
 		{
-			MessageBox.Show( this, japanese + "\r\n\r\n" + english, Text, MessageBoxButtons.OK, MessageBoxIcon.Error );
+			MessageBox.Show( this, UiText.FormatError( message, detail ), Text, MessageBoxButtons.OK, MessageBoxIcon.Error );
 		}
 
 		protected override void OnFormClosing( FormClosingEventArgs e )

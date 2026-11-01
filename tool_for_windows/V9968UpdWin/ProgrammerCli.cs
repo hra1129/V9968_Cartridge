@@ -81,13 +81,13 @@ namespace V9968UpdWin
 		{
 			reason = null;
 			if( !scan.Succeeded ) {
-				reason = "V9968 Cartridge (Tang Nano 20K) が見つかりません。";
+				reason = UiText.DeviceNotFound;
 				return false;
 			}
 			var names = Regex.Matches( scan.Output, @"\bGW\d[A-Z]*-\d+[A-Z0-9]*\b", RegexOptions.IgnoreCase )
 				.Cast<Match>().Select( m => m.Value.ToUpperInvariant() ).Distinct().ToArray();
 			if( names.Length > 0 && !names.Any( n => n.StartsWith( "GW2AR-18", StringComparison.Ordinal ) ) ) {
-				reason = "接続されている FPGA が Tang Nano 20K (GW2AR-18C) ではありません。\r\n検出: " + string.Join( ", ", names );
+				reason = string.Format( UiText.WrongDeviceFormat, string.Join( ", ", names ) );
 				return false;
 			}
 			return true;
@@ -137,7 +137,7 @@ namespace V9968UpdWin
 				}
 			}
 			catch( Exception ex ) {
-				emit( "Error: programmer_cli を起動できません: " + ex.Message );
+				emit( UiText.CliStartFailedPrefix + ex.Message );
 				result.ExitCode = -1;
 			}
 			lock( sync ) {

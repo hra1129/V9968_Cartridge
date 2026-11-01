@@ -12,6 +12,17 @@
     <Copyright>Copyright (C)2026 HRA!</Copyright>
     <Version>1.0.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- UI language: Ja (default) or En. En renames the output to V9968UpdWinEn.exe. -->
+    <UiLanguage Condition="'$(UiLanguage)' == ''">Ja</UiLanguage>
+    <AssemblyName Condition="'$(UiLanguage)' == 'En'">V9968UpdWinEn</AssemblyName>
+    <AssemblyTitle Condition="'$(UiLanguage)' == 'En'">V9968UPD for Windows (English)</AssemblyTitle>
+    <Product Condition="'$(UiLanguage)' == 'En'">V9968UPD for Windows (English)</Product>
   </PropertyGroup>
+
+  <!-- Compile exactly one UI text table, selected by UiLanguage. -->
+  <ItemGroup>
+    <Compile Remove="UiText.*.cs" />
+    <Compile Include="UiText.$(UiLanguage).cs" />
+  </ItemGroup>
 
 </Project>
