@@ -100,9 +100,12 @@ module tangnano20k_vdp_cartridge (
 	wire			w_rom_bus_rdata_en;
 
 	wire			w_bus_vdp_ioreq;
+	wire			w_bus_vdp_hit;
 	wire			w_bus_vdp_ready;
 	wire	[7:0]	w_bus_vdp_rdata;
 	wire			w_bus_vdp_rdata_en;
+	wire			w_bus_vdp_write_done;
+	wire			w_slot_vdp_wait;
 
 	wire			w_sdram_init_busy;
 
@@ -150,7 +153,7 @@ module tangnano20k_vdp_cartridge (
 	wire	[23:0]	w_pcm_l;
 	wire	[23:0]	w_pcm_r;
 
-	assign slot_wait		= w_sdram_init_busy;
+	assign slot_wait		= w_sdram_init_busy | w_slot_vdp_wait;
 	assign oe_n				= 1'b0;
 
 	always @( posedge clk85m ) begin
@@ -211,6 +214,7 @@ module tangnano20k_vdp_cartridge (
 		.p_slot_data		( slot_d					),
 		.p_slot_int			( slot_intr					),
 		.p_slot_data_dir	( slot_data_dir				),
+		.p_slot_wait		( w_slot_vdp_wait			),
 		.int_n				( w_int_n					),
 		.bus_address		( w_bus_address				),
 		.bus_ioreq			( w_bus_ioreq				),
@@ -222,6 +226,7 @@ module tangnano20k_vdp_cartridge (
 		.bus_wdata			( w_bus_wdata				),
 		.bus_rdata			( w_bus_rdata				),
 		.bus_rdata_en		( w_bus_rdata_en			),
+		.bus_vdp_write_done	( w_bus_vdp_write_done		),
 		.dipsw				( dipsw[0]					)
 	);
 
@@ -262,9 +267,12 @@ module tangnano20k_vdp_cartridge (
 						  ( w_geo_rdata_en		) ? w_geo_rdata:
 						  ( w_bus_vdp_rdata_en	) ? w_bus_vdp_rdata: 8'hFF;
 	assign w_bus_rdata_en	= w_bus_sysctrl_rdata_en | w_bus_vdp_rdata_en | w_geo_rdata_en;
+	// Offset 6 is reserved for MegaRAM, not a VDP port.
+	assign w_bus_vdp_hit	= w_bus_ioreq && w_bus_address <= 3'd4;
 	//	System Controller accesses during a ROM command are dropped, not retried.
 	assign w_bus_ready		= w_bus_sysctrl_ioreq ? 1'b1:
-							  w_geo_hit ? w_geo_ready: w_bus_vdp_ready;
+							  w_geo_hit ? w_geo_ready:
+							  w_bus_vdp_hit ? w_bus_vdp_ready: 1'b1;
 
 	// --------------------------------------------------------------------
 	//	Config ROM Reader/Writer (I/O 40h-4Fh)
@@ -323,11 +331,12 @@ module tangnano20k_vdp_cartridge (
 		.bus_address		( w_bus_address				),
 		.bus_ioreq			( w_bus_ioreq				),
 		.bus_write			( w_bus_write				),
-		.bus_valid			( w_bus_valid & w_bus_ioreq & ~w_geo_hit ),
+		.bus_valid			( w_bus_valid & w_bus_vdp_hit ),
 		.bus_ready			( w_bus_vdp_ready			),
 		.bus_wdata			( w_bus_wdata				),
 		.bus_rdata			( w_bus_vdp_rdata			),
 		.bus_rdata_en		( w_bus_vdp_rdata_en		),
+		.bus_write_done		( w_bus_vdp_write_done		),
 		.int_n				( w_int_n					),
 		.vram_address		( w_sdram_address[17:2]		),
 		.vram_write			( w_sdram_write				),

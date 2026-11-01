@@ -112,6 +112,7 @@ module tb ();
 		.bus_wdata		( bus_wdata		),
 		.bus_rdata		( bus_rdata		),
 		.bus_rdata_en	( bus_rdata_en	),
+		.bus_write_done	(				),
 		.bus_ready		( bus_ready		),
 		.int_n			( int_n			),
 		.vram_address	( vram_address	),

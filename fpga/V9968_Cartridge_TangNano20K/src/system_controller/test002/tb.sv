@@ -8,6 +8,7 @@ module tb;
 	reg [7:0] address = 0, wdata = 0;
 	wire [7:0] data;
 	wire data_dir;
+	wire slot_wait;
 	assign data = !wr_n ? wdata : 8'hZZ;
 	wire [2:0] bus_address;
 	wire [3:0] sys_address;
@@ -26,11 +27,12 @@ module tb;
 		.clk(clk), .initial_busy(initial_busy), .p_slot_reset_n(reset_n),
 		.p_slot_ioreq_n(ioreq_n), .p_slot_wr_n(wr_n), .p_slot_rd_n(rd_n),
 		.p_slot_address(address), .p_slot_data(data), .p_slot_int(),
-		.p_slot_data_dir(data_dir), .int_n(1'b1),
+		.p_slot_data_dir(data_dir), .p_slot_wait(slot_wait), .int_n(1'b1),
 		.bus_address(bus_address), .bus_ioreq(vdp_cs),
 		.bus_sysctrl_address(sys_address), .bus_sysctrl_ioreq(sys_cs),
 		.bus_write(write), .bus_valid(valid), .bus_ready(1'b1),
 		.bus_wdata(bus_wdata), .bus_rdata(bus_rdata), .bus_rdata_en(bus_rdata_en),
+		.bus_vdp_write_done(valid && vdp_cs && write),
 		.dipsw(dipsw)
 	);
 	system_controller u_controller (
@@ -64,6 +66,9 @@ module tb;
 		wr_n = !wr;
 		rd_n = wr;
 		ioreq_n = 0;
+		#1;
+		if( (route != 1 || port[2:0] >= 3'd5) && slot_wait !== 1'b0 )
+			$fatal(1, "Unexpected WAIT on port %h", port);
 		repeat(40) @(negedge clk);
 		if( data_dir !== expected_en || (!wr && expected_en && data !== expected_data) )
 			$fatal(1, "Port %h: dir=%b data=%h expected dir=%b data=%h",

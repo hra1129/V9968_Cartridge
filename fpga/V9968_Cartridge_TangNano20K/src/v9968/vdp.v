@@ -68,6 +68,7 @@ module vdp (
 	input		[7:0]	bus_wdata,
 	output		[7:0]	bus_rdata,
 	output				bus_rdata_en,
+	output				bus_write_done,
 
 	output				int_n,
 
@@ -254,6 +255,7 @@ module vdp (
 		.bus_wdata									( bus_wdata									),
 		.bus_rdata									( bus_rdata									),
 		.bus_rdata_en								( bus_rdata_en								),
+		.bus_write_done								( bus_write_done							),
 		.vram_address								( w_cpu_vram_address						),
 		.vram_write									( w_cpu_vram_write							),
 		.vram_valid									( w_cpu_vram_valid							),

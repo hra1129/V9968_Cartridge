@@ -67,6 +67,7 @@ module msx_slot(
 	inout	[7:0]	p_slot_data,
 	output			p_slot_int,				//	0 or HiZ: Normal, 1: Interrupt
 	output			p_slot_data_dir,		//	0: MSX→Cartridge (Write), 1: Cartridge→MSX (Read)
+	output			p_slot_wait,			//	1: request WAIT
 	//	Local BUS
 	input			int_n,
 	output	[2:0]	bus_address,
@@ -79,6 +80,7 @@ module msx_slot(
 	output	[7:0]	bus_wdata,
 	input	[7:0]	bus_rdata,
 	input			bus_rdata_en,
+	input			bus_vdp_write_done,
 	input			dipsw
 );
 	reg				ff_pre_slot_ioreq_n	= 1'b1;
@@ -104,9 +106,20 @@ module msx_slot(
 	reg				ff_sysctrl_ioreq	= 1'b0;
 	reg		[7:0]	ff_rdata			= 8'd0;
 	reg				ff_data_out			= 1'b0;
+	reg				ff_vdp_read_seen	= 1'b0;
+	reg				ff_vdp_read_stable	= 1'b0;
+	reg				ff_vdp_read_ready	= 1'b0;
+	reg				ff_vdp_write_ready	= 1'b0;
 	wire	[7:0]	w_io_address;
+	wire			w_slot_vdp_access;
 
 	assign w_io_address	= (dipsw == 1'b0) ? 8'h88: 8'h98;
+	assign w_slot_vdp_access = p_slot_address[7:3] == w_io_address[7:3] &&
+	                           p_slot_address[2:0] <= 3'd4;
+	// Assert directly from slot strobes so WAIT is not delayed by input synchronizers.
+	assign p_slot_wait = !p_slot_ioreq_n && w_slot_vdp_access &&
+	                     ((!p_slot_rd_n && !ff_vdp_read_ready) ||
+	                      (!p_slot_wr_n && !ff_vdp_write_ready));
 
 	// --------------------------------------------------------------------
 	//	Initial busy latch
@@ -187,6 +200,31 @@ module msx_slot(
 		end
 		else if( !ff_iorq_rd ) begin
 			ff_data_out		<= 1'b0;
+		end
+	end
+
+	always @( posedge clk ) begin
+		if( !p_slot_reset_n || ff_pre_slot_ioreq_n || ff_pre_slot_rd_n ) begin
+			ff_vdp_read_seen  <= 1'b0;
+			ff_vdp_read_stable <= 1'b0;
+			ff_vdp_read_ready <= 1'b0;
+		end
+		else begin
+			if( bus_rdata_en && ff_iorq_rd && ff_ioreq && ff_bus_address <= 3'd4 ) begin
+				ff_vdp_read_seen <= 1'b1;
+			end
+			// Keep the read data driven for two clocks before releasing WAIT.
+			ff_vdp_read_stable <= ff_vdp_read_seen;
+			ff_vdp_read_ready <= ff_vdp_read_stable;
+		end
+	end
+
+	always @( posedge clk ) begin
+		if( !p_slot_reset_n || ff_pre_slot_ioreq_n || ff_pre_slot_wr_n ) begin
+			ff_vdp_write_ready <= 1'b0;
+		end
+		else if( bus_vdp_write_done && ff_iorq_wr && ff_ioreq ) begin
+			ff_vdp_write_ready <= 1'b1;
 		end
 	end
 

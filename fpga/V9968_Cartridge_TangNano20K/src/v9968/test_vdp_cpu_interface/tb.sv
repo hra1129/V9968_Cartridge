@@ -68,6 +68,7 @@ module tb ();
 	reg		[7:0]		bus_wdata;
 	wire	[7:0]		bus_rdata;
 	wire				bus_rdata_en;
+	wire				bus_write_done;
 
 	wire	[16:0]		vram_address;
 	wire				vram_write;
@@ -820,6 +821,7 @@ module tb_sprite_overmap_status ();
 		.bus_wdata(8'd0),
 		.bus_rdata(bus_rdata),
 		.bus_rdata_en(bus_rdata_en),
+		.bus_write_done(),
 		.vram_address(),
 		.vram_write(),
 		.vram_valid(),
@@ -1030,6 +1032,7 @@ module tb_port1_latch_reset ();
 		.bus_wdata(bus_wdata),
 		.bus_rdata(bus_rdata),
 		.bus_rdata_en(bus_rdata_en),
+		.bus_write_done(),
 		.vram_address(),
 		.vram_write(vram_write),
 		.vram_valid(vram_valid),
