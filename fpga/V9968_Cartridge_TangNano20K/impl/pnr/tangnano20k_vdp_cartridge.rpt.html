@@ -83,7 +83,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Sat Oct 24 18:50:59 2026
+<td>Sun Nov  1 19:51:58 2026
 </td>
 </tr>
 <tr>
@@ -97,24 +97,24 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <tr>
 <td class="label">Place & Route Process</td>
 <td>Running placement:
-   Placement Phase 0: CPU time = 0h 0m 3s, Elapsed time = 0h 0m 3s
-   Placement Phase 1: CPU time = 0h 0m 0.535s, Elapsed time = 0h 0m 0.535s
-   Placement Phase 2: CPU time = 0h 0m 11s, Elapsed time = 0h 0m 11s
-   Placement Phase 3: CPU time = 0h 0m 11s, Elapsed time = 0h 0m 11s
+   Placement Phase 0: CPU time = 0h 0m 5s, Elapsed time = 0h 0m 5s
+   Placement Phase 1: CPU time = 0h 0m 0.569s, Elapsed time = 0h 0m 0.569s
+   Placement Phase 2: CPU time = 0h 0m 12s, Elapsed time = 0h 0m 12s
+   Placement Phase 3: CPU time = 0h 0m 8s, Elapsed time = 0h 0m 8s
    Total Placement: CPU time = 0h 0m 25s, Elapsed time = 0h 0m 25s
 Running routing:
-   Routing Phase 0: CPU time = 0h 0m 0.01s, Elapsed time = 0h 0m 0.011s
-   Routing Phase 1: CPU time = 0h 0m 0.741s, Elapsed time = 0h 0m 0.74s
-   Routing Phase 2: CPU time = 0h 3m 24s, Elapsed time = 0h 3m 24s
+   Routing Phase 0: CPU time = 0h 0m 0.012s, Elapsed time = 0h 0m 0.012s
+   Routing Phase 1: CPU time = 0h 0m 0.661s, Elapsed time = 0h 0m 0.661s
+   Routing Phase 2: CPU time = 0h 0m 32s, Elapsed time = 0h 0m 32s
    Routing Phase 3: CPU time = 0h 0m 0s, Elapsed time = 0h 0m 0s
-   Total Routing: CPU time = 0h 3m 25s, Elapsed time = 0h 3m 25s
+   Total Routing: CPU time = 0h 0m 33s, Elapsed time = 0h 0m 33s
 Generate output files:
    CPU time = 0h 0m 2s, Elapsed time = 0h 0m 2s
 </td>
 </tr>
 <tr>
 <td class="label">Total Time and Memory Usage</td>
-<td>CPU time = 0h 3m 53s, Elapsed time = 0h 3m 53s, Peak memory usage = 951MB</td>
+<td>CPU time = 0h 1m 0s, Elapsed time = 0h 1m 0s, Peak memory usage = 737MB</td>
 </tr>
 </table>
 <br/>
@@ -129,12 +129,12 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Logic</td>
-<td>19449/20736</td>
-<td>94%</td>
+<td>16836/20736</td>
+<td>82%</td>
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --LUT,ALU,ROM16</td>
-<td>19329(16946 LUT, 2383 ALU, 0 ROM16)</td>
+<td>16716(14232 LUT, 2484 ALU, 0 ROM16)</td>
 <td>-</td>
 </tr>
 <tr>
@@ -144,7 +144,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Register</td>
-<td>8960/15915</td>
+<td>8975/15915</td>
 <td>57%</td>
 </tr>
 <tr>
@@ -154,7 +154,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --Logic Register as FF</td>
-<td>8888/15552</td>
+<td>8902/15552</td>
 <td>58%</td>
 </tr>
 <tr>
@@ -164,13 +164,13 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --I/O Register as FF</td>
-<td>72/363</td>
-<td>20%</td>
+<td>73/363</td>
+<td>21%</td>
 </tr>
 <tr>
 <td class="label">CLS</td>
-<td>10192/10368</td>
-<td>99%</td>
+<td>9741/10368</td>
+<td>94%</td>
 </tr>
 <tr>
 <td class="label">I/O Port</td>
@@ -299,9 +299,14 @@ Generate output files:
 <td> BR BL</td>
 </tr>
 <tr>
+<td class="label">ff_reset3_n2</td>
+<td>PRIMARY</td>
+<td> TR TL BL</td>
+</tr>
+<tr>
 <td class="label">clk143m</td>
 <td>PRIMARY</td>
-<td> TR BR</td>
+<td> BR BL</td>
 </tr>
 <tr>
 <td class="label">clk85m</td>
@@ -311,7 +316,7 @@ Generate output files:
 <tr>
 <td class="label">O_sdram_clk_d</td>
 <td>PRIMARY</td>
-<td> TR TL</td>
+<td> TR TL BL</td>
 </tr>
 <tr>
 <td class="label">clk42m</td>
@@ -322,11 +327,6 @@ Generate output files:
 <td class="label">clk28m</td>
 <td>PRIMARY</td>
 <td> BR BL</td>
-</tr>
-<tr>
-<td class="label">u_geo3d/u_engine/fcur_87_8</td>
-<td>PRIMARY</td>
-<td> TR BR</td>
 </tr>
 <tr>
 <td class="label">ff_reset_n2</td>
@@ -349,22 +349,22 @@ Generate output files:
 <td> -</td>
 </tr>
 <tr>
-<td class="label">u_geo3d/u_engine/n28371_4</td>
-<td>LW</td>
-<td> -</td>
-</tr>
-<tr>
-<td class="label">u_geo3d/u_engine/fbuf_87_6</td>
-<td>LW</td>
-<td> -</td>
-</tr>
-<tr>
-<td class="label">u_geo3d/u_engine/hb[0]_7_9</td>
+<td class="label">u_geo3d/u_engine/z_core_addr_4_6</td>
 <td>LW</td>
 <td> -</td>
 </tr>
 <tr>
 <td class="label">u_geo3d/u_engine/eya_16_10</td>
+<td>LW</td>
+<td> -</td>
+</tr>
+<tr>
+<td class="label">u_geo3d/u_engine/n28383_7</td>
+<td>LW</td>
+<td> -</td>
+</tr>
+<tr>
+<td class="label">u_v9968/u_timing_control/u_sprite/ff_active</td>
 <td>LW</td>
 <td> -</td>
 </tr>
@@ -672,7 +672,7 @@ Generate output files:
 <td>DOUT/WE_N</td>
 <td>LVTTL33</td>
 <td>NA</td>
-<td>DOWN</td>
+<td>NONE</td>
 <td>ON</td>
 <td>NONE</td>
 <td>NA</td>
@@ -691,7 +691,7 @@ Generate output files:
 <td>SCLK</td>
 <td>LVTTL33</td>
 <td>NA</td>
-<td>DOWN</td>
+<td>NONE</td>
 <td>ON</td>
 <td>NONE</td>
 <td>NA</td>
@@ -4187,7 +4187,7 @@ Generate output files:
 <td>DOUT/WE_N</td>
 <td>LVTTL33</td>
 <td>NA</td>
-<td>DOWN</td>
+<td>NONE</td>
 <td>ON</td>
 <td>NONE</td>
 <td>NA</td>
@@ -4204,7 +4204,7 @@ Generate output files:
 <td>SCLK</td>
 <td>LVTTL33</td>
 <td>NA</td>
-<td>DOWN</td>
+<td>NONE</td>
 <td>ON</td>
 <td>NONE</td>
 <td>NA</td>

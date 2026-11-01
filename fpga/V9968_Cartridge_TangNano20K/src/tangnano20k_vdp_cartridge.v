@@ -240,6 +240,7 @@ module tangnano20k_vdp_cartridge (
 	wire			w_geo_cmd_wr;
 	wire	[5:0]	w_geo_cmd_num;
 	wire	[7:0]	w_geo_cmd_data;
+	wire			w_geo_cmd_fill_span;
 	wire			w_geo_cmd_ce;
 	wire			w_geo_run_busy;
 
@@ -259,6 +260,7 @@ module tangnano20k_vdp_cartridge (
 		.cmd_wr				( w_geo_cmd_wr				),
 		.cmd_num			( w_geo_cmd_num				),
 		.cmd_data			( w_geo_cmd_data			),
+		.cmd_fill_span		( w_geo_cmd_fill_span		),
 		.cmd_ce				( w_geo_cmd_ce				),
 		.run_busy			( w_geo_run_busy			)
 	);
@@ -355,6 +357,7 @@ module tangnano20k_vdp_cartridge (
 		.ext_cmd_wr			( w_geo_cmd_wr				),
 		.ext_cmd_num		( w_geo_cmd_num				),
 		.ext_cmd_data		( w_geo_cmd_data			),
+		.ext_cmd_fill_span	( w_geo_cmd_fill_span		),
 		.ext_cmd_ce			( w_geo_cmd_ce				),
 		.force_highspeed	( dipsw[1]					),
 		.button				( button					),

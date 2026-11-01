@@ -119,7 +119,8 @@
 //      visible faces are kept in a heap since v2.0: same order, less time)
 //   d. each face (convex quad; triangles repeat a vertex) is filled row by
 //      row: the span between the leftmost and rightmost edge crossing,
-//      clipped to the screen, is sent as a horizontal LINE command
+//      clipped to the screen, is sent as a horizontal LINE command. The V9968
+//      may execute an opaque SCREEN 8 span using its HMMV write path.
 //   Counters in this mode: SKIPPED = near faces, CULLED = back faces,
 //   DRAWN = faces drawn.
 //
@@ -150,6 +151,7 @@ module geo3d_engine #(
     output reg         cmd_wr,
     output reg  [5:0]  cmd_num,
     output reg  [7:0]  cmd_data,
+    output reg         cmd_fill_span,
     input  wire        cmd_ce,
     output wire        run_busy
 );
@@ -569,6 +571,7 @@ module geo3d_engine #(
     reg        hold_valid;
     reg [7:0]  hb [0:18];
     reg        hlrmm;                         // 0: LINE (11 regs), 1: LRMM (19 regs)
+    reg        hfill;                         // untextured filled-face span
     reg [4:0]  ik;
     // LRMM register order: R#32..R#45, R#47..R#50, then R#46 (starts it)
     wire [5:0] lrmm_num = (ik < 5'd14) ? 6'd32 + {1'b0, ik} :
@@ -788,8 +791,8 @@ module geo3d_engine #(
         if (rst) begin
             st <= R_IDLE; ph_run <= 1'b0; ph_xf <= 1'b0; ph_edge <= 1'b0;
             e_core_wr <= 1'b0; pwe <= 1'b0; swe <= 1'b0; fmode <= 1'b0;
-            hold_valid <= 1'b0; isend <= 1'b0; guard <= 3'd0;
-            cmd_wr <= 1'b0; cmd_num <= 6'd0; cmd_data <= 8'd0;
+            hold_valid <= 1'b0; hfill <= 1'b0; isend <= 1'b0; guard <= 3'd0;
+            cmd_wr <= 1'b0; cmd_num <= 6'd0; cmd_data <= 8'd0; cmd_fill_span <= 1'b0;
             cnt_skip <= 16'd0; cnt_draw <= 16'd0; cnt_cull <= 16'd0;
         end else begin
             e_core_wr <= 1'b0;
@@ -808,6 +811,7 @@ module geo3d_engine #(
                 cmd_wr   <= 1'b1;
                 cmd_num  <= hlrmm ? lrmm_num : 6'd36 + {1'b0, ik};
                 cmd_data <= hb[ik];
+                cmd_fill_span <= hfill;
                 if (ik == (hlrmm ? 5'd18 : 5'd10)) begin
                     isend      <= 1'b0;
                     hold_valid <= 1'b0;
@@ -961,6 +965,7 @@ module geo3d_engine #(
                         hb[9]  <= larg;
                         hb[10] <= {4'h7, lop};
                         hlrmm  <= 1'b0;
+                        hfill  <= 1'b0;
                         hold_valid <= 1'b1;
                         cnt_draw   <= cnt_draw + 16'd1;
                         st <= E_NEXT;
@@ -1339,11 +1344,13 @@ module geo3d_engine #(
                         hb[17] <= dv[15:8];
                         hb[18] <= {4'h3, lop};
                         hlrmm  <= 1'b1;
+                        hfill  <= 1'b0;
                         hold_valid <= 1'b1;
                         st <= D_YNEXT;
                     end
                     else if (!hold_valid) begin
                         hlrmm  <= 1'b0;
+                        hfill  <= 1'b1;
                         hb[0]  <= scl_r[7:0];
                         hb[1]  <= {7'd0, scl_r[8]};
                         hb[2]  <= sdy[7:0];

@@ -20,8 +20,8 @@
 // geo3d/integration/apply_geo3d_patch.py). Crossings use toggles:
 //   bus -> engine : request toggle, one engine-clock strobe per access
 //   engine -> bus : acknowledge toggle when read data is ready
-//   engine -> VDP : one toggle per command-register write, turned back into
-//                   a single clk pulse (a write is never repeated)
+//   engine -> VDP : one toggle per command-register write, with its data and
+//                   filled-span tag, turned back into a single clk pulse
 //   VDP -> engine : CE is a level, sampled directly (related clocks)
 // ============================================================================
 module geo3d_bus #(
@@ -45,6 +45,7 @@ module geo3d_bus #(
     output reg        cmd_wr,
     output reg  [5:0] cmd_num,
     output reg  [7:0] cmd_data,
+    output reg        cmd_fill_span,
     input  wire       cmd_ce,
     output wire       run_busy
 );
@@ -91,9 +92,11 @@ module geo3d_bus #(
     wire       e_cmd_wr;
     wire [5:0] e_cmd_num;
     wire [7:0] e_cmd_data;
+    wire       e_cmd_fill_span;
     reg        cmd_t;
     reg  [5:0] cmd_num_e;
     reg  [7:0] cmd_data_e;
+    reg        cmd_fill_span_e;
 
     // v2.0: the engine side resets from its own flop. The slot's reset_n then
     // reaches one clk_eng register instead of every register of the engine
@@ -120,6 +123,7 @@ module geo3d_bus #(
                 cmd_t      <= ~cmd_t;
                 cmd_num_e  <= e_cmd_num;
                 cmd_data_e <= e_cmd_data;
+                cmd_fill_span_e <= e_cmd_fill_span;
             end
         end
     end
@@ -128,7 +132,8 @@ module geo3d_bus #(
     geo3d_engine u_engine (
         .clk(clk_eng), .rst(rst_e),
         .sel(a_sel), .wr_stb(e_wr), .rd_stb(e_rd), .din(a_data), .dout(eng_dout),
-        .cmd_wr(e_cmd_wr), .cmd_num(e_cmd_num), .cmd_data(e_cmd_data), .cmd_ce(ce_s),
+        .cmd_wr(e_cmd_wr), .cmd_num(e_cmd_num), .cmd_data(e_cmd_data),
+        .cmd_fill_span(e_cmd_fill_span), .cmd_ce(ce_s),
         .run_busy(run_busy)
     );
 
@@ -136,7 +141,7 @@ module geo3d_bus #(
     reg cmd_seen;
     always @(posedge clk) begin
         if (!reset_n) begin
-            cmd_seen <= 1'b0; cmd_wr <= 1'b0;
+            cmd_seen <= 1'b0; cmd_wr <= 1'b0; cmd_fill_span <= 1'b0;
         end else begin
             cmd_wr <= 1'b0;
             if (cmd_t != cmd_seen) begin
@@ -144,6 +149,7 @@ module geo3d_bus #(
                 cmd_wr   <= 1'b1;
                 cmd_num  <= cmd_num_e;
                 cmd_data <= cmd_data_e;
+                cmd_fill_span <= cmd_fill_span_e;
             end
         end
     end

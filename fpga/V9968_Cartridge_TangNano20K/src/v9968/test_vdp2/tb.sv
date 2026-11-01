@@ -126,7 +126,12 @@ module tb ();
 		.display_en		( display_en	),
 		.display_r		( display_r		),
 		.display_g		( display_g		),
-		.display_b		( display_b		)
+		.display_b		( display_b		),
+		.ext_cmd_wr		( 1'b0			),
+		.ext_cmd_num	( 6'd0			),
+		.ext_cmd_data	( 8'd0			),
+		.ext_cmd_fill_span ( 1'b0		),
+		.ext_cmd_ce		(				)
 	);
 
 	// --------------------------------------------------------------------
