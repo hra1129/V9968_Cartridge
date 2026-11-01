@@ -1,6 +1,8 @@
 # System Controller の仕様
 	V9968 Cartridge には SerialSRAM はなく、起動時コピーは行わない。
-	System Controller は WAIT を出さない。既存の SDRAM 初期化中の WAIT 制御は変更しない。
+	System Controller (40h-4Fh) は WAIT を出さない。
+	VDP (88h-8Ch または 98h-9Ch) へのアクセスでは、処理完了まで別途 WAIT を出す。
+	既存の SDRAM 初期化中の WAIT 制御は変更しない。
 
 	I/O の 40h-4Fh に接続されている。
 	40h に 128=80h を書き込んだ場合に有効化される。有効化されるまでは、40-4Fh へのリードアクセスに
@@ -147,7 +149,7 @@
 	|テスト|確認内容|
 	|---|---|
 	|test001|BUSY 中の読み書き無視、レジスタ保持、SPI コマンド列、Reserved コマンド|
-	|test002|msx_slot の 40h-4Fh と 88h/98h デコード、バス解放、BUSY 中の既存ポート利用|
+	|test002|msx_slot の 40h-4Fh と 88h/98h デコード、バス解放、BUSY 中の既存ポート利用、非 VDP ポートへの WAIT 非干渉|
 	|test003|Flash モデルでの読み書き・消去・ステータス、40h ポーリング、256バイト/部分ページ/境界超過/1バイト転送、SPI半周期18ns以上|
 
 	test003 は Flash の出力に 12ns の遅延を加えてタイミング余裕を確認する。

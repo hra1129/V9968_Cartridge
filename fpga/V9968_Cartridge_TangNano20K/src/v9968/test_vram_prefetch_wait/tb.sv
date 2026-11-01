@@ -394,6 +394,7 @@ module tb_vram_prefetch_wait;
 			$fatal(1, "Read address did not initiate exactly one prefetch");
 		force_refresh = 1'b1;
 		read_port(base, expected[18'h00243], -1, 14, 0);
+		if( !u_cpu.ff_busy ) $fatal(1, "Expected prefetch to wait for refresh");
 		no_wait_access(8'h40, 1'b0);
 		no_wait_access(8'h40, 1'b1);
 		no_wait_access(base + 8'd5, 1'b0);
@@ -403,6 +404,7 @@ module tb_vram_prefetch_wait;
 		no_wait_access(base + 8'd7, 1'b0);
 		no_wait_access(base + 8'd7, 1'b1);
 		no_wait_access(8'h88, 1'b0);
+		if( !u_cpu.ff_busy ) $fatal(1, "Prefetch unexpectedly completed during refresh");
 		fork
 			begin
 				read_port(base, expected[18'h00244], 60, -1, 2000);
@@ -538,6 +540,31 @@ module tb_vram_prefetch_wait;
 			read_port(base, expected[18'h00A00 + i], -1, 14, i * 900);
 		end
 		no_wait_access(8'h98, 1'b0);
+
+		$display("[9] Reset while a VRAM read is waiting");
+		wait_prefetch();
+		force_refresh = 1'b1;
+		set_read_address(base, 14'h0B00);
+		if( !u_cpu.ff_busy ) $fatal(1, "Expected prefetch to wait before reset");
+		@(negedge clk);
+		slot_address = base;
+		slot_ioreq_n = 1'b0;
+		slot_rd_n = 1'b0;
+		repeat(10) @(negedge clk);
+		if( slot_wait !== 1'b1 ) $fatal(1, "Read did not wait before reset");
+		reset_n = 1'b0;
+		slot_ioreq_n = 1'b1;
+		slot_rd_n = 1'b1;
+		repeat(10) @(negedge clk);
+		if( slot_wait !== 1'b0 || slot_data_dir !== 1'b0 || slot_data !== 8'hZZ )
+			$fatal(1, "Slot was not released after reset");
+		force_refresh = 1'b0;
+		reset_n = 1'b1;
+		repeat(10) @(negedge clk);
+		set_read_address(base, 14'h0B00);
+		wait_prefetch();
+		read_port(base, expected[18'h00B00], -1, 14, 0);
+
 		$display("VRAM prefetch/WAIT integration PASSED; max prefetched-read response %0t ps", max_fast_read_time);
 		test_passed = 1'b1;
 		$finish;
