@@ -75,7 +75,7 @@
                 "SubInsts": [
                     {
                         "InstFile": "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/geo3d/geo3d_bus.v",
-                        "InstLine": 132,
+                        "InstLine": 157,
                         "InstName": "u_engine",
                         "ModuleFile": "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/geo3d/geo3d_engine.v",
                         "ModuleLine": 139,
@@ -227,7 +227,7 @@
                         "SubInsts": [
                             {
                                 "InstFile": "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_color_palette.v",
-                                "InstLine": 473,
+                                "InstLine": 479,
                                 "InstName": "u_color_palette_ram",
                                 "ModuleFile": "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/v9968/vdp_color_palette_ram.v",
                                 "ModuleLine": 58,

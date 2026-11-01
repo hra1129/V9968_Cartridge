@@ -361,7 +361,8 @@ module vdp_color_palette (
 	// --------------------------------------------------------------------
 	//	Palette RAM Read Signal ( screen_pos_x = 0 )
 	// --------------------------------------------------------------------
-	assign w_display_color		= reg_yjk_mode ? ff_display_color_delay3: ff_display_color_delay0;
+	//	YJK モードでは ff_y / ff_yjk_en と同じ画素 (delay4) を使う
+	assign w_display_color		= reg_yjk_mode ? ff_display_color_delay4: ff_display_color_delay0;
 
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
@@ -374,6 +375,11 @@ module vdp_color_palette (
 				if( reg_ext_palette_mode ) begin
 					//	映像期間の場合、256palette モードならそのまま渡しつつ、palette になる。
 					ff_display_color	<= w_display_color[8] ? w_display_color[7:0] : reg_backdrop_color;
+					ff_display_color_oe	<= 1'b1;
+				end
+				else if( reg_yjk_mode && reg_yae_mode && w_display_color[8] ) begin
+					//	SCREEN10/11 の A=1 画素と周辺色は、上位4bit をパレット番号とする
+					ff_display_color	<= { 4'd0, w_display_color[7:4] };
 					ff_display_color_oe	<= 1'b1;
 				end
 				else if( w_display_color[8] ) begin
@@ -583,9 +589,9 @@ module vdp_color_palette (
 	// --------------------------------------------------------------------
 	//	RGB Color Conversion ( screen_pos_x = 4 )
 	// --------------------------------------------------------------------
-	assign w_display_r_pre = (!reg_ext_palette_mode && w_256colors_mode) ? { ff_display_color256[4:2], ff_display_color256[4:3] } : ff_display_r16;
-	assign w_display_g_pre = (!reg_ext_palette_mode && w_256colors_mode) ? { ff_display_color256[7:5], ff_display_color256[7:6] } : ff_display_g16;
-	assign w_display_b_pre = (!reg_ext_palette_mode && w_256colors_mode) ? { ff_display_color256[1:0], ff_display_color256[1] & ff_display_color256[0], ff_display_color256[1:0] } : ff_display_b16;
+	assign w_display_r_pre = (!reg_ext_palette_mode && w_256colors_mode && !reg_yjk_mode) ? { ff_display_color256[4:2], ff_display_color256[4:3] } : ff_display_r16;
+	assign w_display_g_pre = (!reg_ext_palette_mode && w_256colors_mode && !reg_yjk_mode) ? { ff_display_color256[7:5], ff_display_color256[7:6] } : ff_display_g16;
+	assign w_display_b_pre = (!reg_ext_palette_mode && w_256colors_mode && !reg_yjk_mode) ? { ff_display_color256[1:0], ff_display_color256[1] & ff_display_color256[0], ff_display_color256[1:0] } : ff_display_b16;
 
 	assign w_display_r = (reg_yjk_mode && (!reg_yae_mode || !ff_yjk_rgb_en)) ? ff_yjk_r : w_display_r_pre;
 	assign w_display_g = (reg_yjk_mode && (!reg_yae_mode || !ff_yjk_rgb_en)) ? ff_yjk_g : w_display_g_pre;

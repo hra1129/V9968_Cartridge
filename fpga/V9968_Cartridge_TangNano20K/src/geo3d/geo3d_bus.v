@@ -85,9 +85,31 @@ module geo3d_bus #(
     end
     assign bus_rdata = eng_dout;
 
+    // clk -> clk_eng crossing for the hold check.
+    // clk_eng rising edges coincide with clk rising edges, so a direct
+    // rising-edge crossing has zero hold relation and fails the 0.5ns hold
+    // uncertainty on short routes. req_t/a_sel/a_wr/a_data are therefore
+    // re-launched on the falling edge of clk (hold relation: half a clk).
+    // clk_eng edges only fall on clk rising edges, so the clk_eng edge that
+    // detects the request is the same as before; each crossing is a single
+    // FF-to-FF hop, which fits the half-period setup relation.
+    // Keep these copies so synthesis does not merge or remove them.
+    reg        req_t_n  /* synthesis syn_preserve = 1 */;
+    reg        a_sel_n  /* synthesis syn_preserve = 1 */;
+    reg        a_wr_n   /* synthesis syn_preserve = 1 */;
+    reg  [7:0] a_data_n /* synthesis syn_preserve = 1 */;
+    always @(negedge clk) begin
+        req_t_n  <= req_t;
+        a_sel_n  <= a_sel;
+        a_wr_n   <= a_wr;
+        a_data_n <= a_data;
+    end
+
     // ------------------------------------------------ engine side (clk_eng)
     reg        req_seen, ack_r;
     reg        e_wr, e_rd;
+    reg        e_sel;
+    reg  [7:0] e_din;
     reg        ce_s;
     wire       e_cmd_wr;
     wire [5:0] e_cmd_num;
@@ -112,10 +134,13 @@ module geo3d_bus #(
         end else begin
             e_wr <= 1'b0; e_rd <= 1'b0;
             ce_s <= cmd_ce;
-            if (req_t != req_seen) begin
-                req_seen <= req_t;
-                e_wr <= a_wr;
-                e_rd <= ~a_wr;
+            if (req_t_n != req_seen) begin
+                req_seen <= req_t_n;
+                e_wr <= a_wr_n;
+                e_rd <= ~a_wr_n;
+                // the engine sees sel/din together with the strobe, as before
+                e_sel <= a_sel_n;
+                e_din <= a_data_n;
             end
             // acknowledge one engine clock after the strobe (dout is then valid)
             if (e_wr | e_rd) ack_r <= ~ack_r;
@@ -131,7 +156,7 @@ module geo3d_bus #(
 
     geo3d_engine u_engine (
         .clk(clk_eng), .rst(rst_e),
-        .sel(a_sel), .wr_stb(e_wr), .rd_stb(e_rd), .din(a_data), .dout(eng_dout),
+        .sel(e_sel), .wr_stb(e_wr), .rd_stb(e_rd), .din(e_din), .dout(eng_dout),
         .cmd_wr(e_cmd_wr), .cmd_num(e_cmd_num), .cmd_data(e_cmd_data),
         .cmd_fill_span(e_cmd_fill_span), .cmd_ce(ce_s),
         .run_busy(run_busy)
