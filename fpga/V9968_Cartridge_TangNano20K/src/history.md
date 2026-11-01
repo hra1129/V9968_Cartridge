@@ -1,3 +1,30 @@
+## 2026-11-01 Geo3D の HMMV 高速化・SCREEN10/11 パレット修正・Geo3D ホールド違反対策
+
+### Geo3D 塗りつぶしの HMMV 高速化
+
+- issue #9 の提案に基づき、Geo3D の通常塗りつぶし行（LOP=0 の水平1行）にタグ（fill_span）を付けて VDP に渡し、VDP 側で1行の HMMV として高速に描画するようにした。
+- 対象は SCREEN8 のみ。`c_g7` は SCREEN8/10/11/12 を含むため、`ff_screen_mode[c_g7] && !reg_yjk_mode` で判定する。それ以外のモードや論理演算付きの場合は従来の LINE で描画する。
+- 変更: `geo3d_engine.v`、`geo3d_bus.v`、`geo3d/readme.md`、`tangnano20k_vdp_cartridge.v`、`vdp.v`、`vdp_command.v`。既存テストベンチ（test_vdp、test_vdp2、test_vdp3、test_vdp_SCREEN0）に `ext_cmd_*` の未使用接続を追加した。
+- `geo3d/test_hmmv`（`tb.sv`、`tb_vdp_modes.sv`、`run.bat`）を追加し、各モード・LOP・画面外・テクスチャ混在・ワイヤーフレーム・モード切替時の動作を確認した。実機で明らかに高速化したことを確認済み。
+
+### SCREEN10/11 (YJK+YAE) で A=1 のパレット画素が黒くなる問題
+
+- 原因は `vdp_color_palette.v` の3点。
+  1. A=1 の画素でパレット RAM を読んでいなかった。
+  2. YJK モードでも SCREEN8 用の色（YJK モードでは更新されず 0 のまま）を選択していた。
+  3. パレット側の参照画素（delay3）が、YJK の A 判定に使う画素（delay4）と1画素ずれていた。
+- A=1 では画素の上位4bit をパレット番号としてパレット RAM を読み、その RGB を出力するよう修正した。A=0 は従来どおり YJK 変換。SCREEN12・SCREEN8・拡張パレットモードの経路は変更していない。
+- 単体シミュレーションで、パレット0〜15、A=1/A=0 交互画素の位置合わせ、SCREEN10/11 の A=0・SCREEN12・SCREEN5・SCREEN8 を確認した。実機では未検証。
+- 既知の未対応事項: SCREEN10/11 の A=0 画素と SCREEN12 では YJK 色がスプライトより優先される（既存動作）。
+
+### Geo3D の clk85m → clk42m ホールド違反対策
+
+- clk42m の立ち上がりは clk85m の立ち上がりと一致するため、立ち上がり同士の受け渡しはホールド関係が 0ns となり、SDC のホールド不確かさ 0.5ns より短い配線（`a_data → texy` 0.480ns など）で違反していた。データが速く着きすぎることが原因のため、FF 複製による負荷分散は逆効果と判断した。
+- `geo3d_bus.v` で、`req_t`/`a_sel`/`a_wr`/`a_data` を clk85m の立ち下がりで取り直すコピー FF（`syn_preserve` 指定）を追加した。エンジン側では req 検出時に `e_wr`/`e_rd` と同時に `e_sel`/`e_din` へ取り込み、エンジンへ渡す。受け渡しは立ち下がり→立ち上がりの FF 1段となり、ホールドに半周期の余裕ができる。req 検出の clk42m エッジ、ack、busy の動作サイクルは変わらない。
+- 立ち下がりのコピーをエンジンへ直結する案は、エンジン内部の深いロジックのためセットアップが -5.2ns となり不採用。SDC の `set_false_path` による除外も修正ではないため採用していない（SDC は変更なし）。
+- `test_hmmv` の2本は PASS。別ディレクトリでの全体合成・配置配線で setup/hold 違反0件、最小 slack は setup +0.103ns、hold +0.074ns。新しい受け渡しのセットアップは +3.934ns。Register 8975 → 8995。
+- 途中の配置では Geo3D 外の `ff_vs → hdmi_converter`（clk85m → clk42m）が -0.035ns になったことがある。再発した場合は同様の方法で対策できる。実機では未検証。
+
 ## 2026-11-01 VRAM 読み出しの先読みと WAIT
 
 - 99h/89h で読み出しアドレスを設定した時点と、98h/88h から読み出した後に、次の VRAM データを先読みする。98h/88h への書き込み値も読み出しバッファに反映し、アドレスは次のアクセス先を指す。
