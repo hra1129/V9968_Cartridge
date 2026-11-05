@@ -954,6 +954,10 @@ module vdp_command (
 		else if( ff_state == c_state_pre_finish && ff_command == c_point ) begin
 			ff_status_color	<= ff_read_pixel;
 		end
+		else if( register_write && register_num == 6'd44 ) begin
+			//	R#44 への書き込みはカラーラッチそのもの (openMSX: COL = value)
+			ff_status_color	<= register_data;
+		end
 	end
 
 	always @( posedge clk ) begin
@@ -976,8 +980,10 @@ module vdp_command (
 			ff_transfer_ready		<= 1'b0;
 			ff_fore_color			<= 8'd0;
 		end
-		else if( register_write && (register_num == 6'd44) ) begin
+		else if( register_write && (register_num == 6'd44) && !(ff_command == c_lmcm && ff_command_execute) ) begin
 			//	lmmc, hmmc, lfmc が VRAM へ書き終えるまで、転送禁止 (CPU→R#44)
+			//	※ LMCM 実行中の R#44 書き込みでは TR を落とさない (書き込みは
+			//	  カラーラッチの更新＋次フェッチの再アームとして扱う)
 			ff_transfer_ready		<= 1'b0;
 		end
 		else if( ff_state == c_state_lmmc_next || ff_state == c_state_hmmc_next || (ff_state == c_state_lfmc_next && ff_bit_count == 3'd0) ) begin
@@ -986,6 +992,10 @@ module vdp_command (
 		end
 		else if( ff_command == c_lmcm && ff_start ) begin
 			//	lmcm が開始されたので、転送禁止 (S#7→CPU)
+			//	TR は最初のフェッチが完了した時点 (c_state_lmcm_make) で立つ。
+			//	openMSX モデルは遅延評価のため開始時に TR を立てるが、
+			//	実チップでは TR はデータ準備完了時に立つので、RTL で
+			//	開始時に立てると通常のドレインがプリロード値を読み違える。
 			ff_transfer_ready		<= 1'b0;
 		end
 		else if( ff_command == c_lfmc && ff_start ) begin

@@ -7,6 +7,8 @@
 -bit
 -tr
 -ph
+-sdf
+-o
 -timing
 -cst_error
 -place_option 0
