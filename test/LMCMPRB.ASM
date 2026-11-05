@@ -425,6 +425,7 @@ write_params::
 			xor		a, a
 			ld		b, 44
 			call	wreg
+			xor		a, a
 			ld		b, 45
 			call	wreg
 			ret

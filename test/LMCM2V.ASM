@@ -151,6 +151,7 @@ run_case::
 			ld		a, 7
 			call	set_s15
 			in		a, [0x99]
+			jr		pl_store
 pix_loop:
 			ld		a, [cproto]
 			cp		a, 1
@@ -167,6 +168,7 @@ pl_read:
 			ld		a, 7
 			call	set_s15
 			in		a, [0x99]
+pl_store:
 			ld		[pval], a
 			ld		hl, [cexpp]
 			ld		a, [cidx]
@@ -294,6 +296,7 @@ write_params::
 			xor		a, a
 			ld		b, 44
 			call	wreg
+			xor		a, a
 			ld		b, 45
 			call	wreg
 			ret
@@ -596,7 +599,7 @@ exp3::		db		0x03, 0x04
 exp4::		db		0x0B
 exp5::		db		0x0A, 0x0B
 exp6::		db		0x03, 0x04, 0x05, 0x06
-exp9::		db		0x0A, 0x0B, 0x00, 0x00
+exp9::		db		0x0A, 0x0B
 
 NUM_CASES	:= 9
 case_table::
@@ -642,7 +645,7 @@ case_table::
 			db		2
 			db		'9'
 			dw		254, 1023, 4, 1
-			db		4
+			db		2
 			dw		exp9
 			db		0
 
