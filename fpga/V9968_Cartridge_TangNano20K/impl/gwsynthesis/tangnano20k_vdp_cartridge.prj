@@ -48,7 +48,7 @@
         <Option type="dsp_style" value="auto"/>
         <Option type="global_freq" value="14.320"/>
         <Option type="looplimit" value="99999999"/>
-        <Option type="map_option" value="2"/>
+        <Option type="map_option" value="1"/>
         <Option type="max_fanout" value="1000"/>
         <Option type="netlist_hierarchy" value="1"/>
         <Option type="opt_goal" value="timing"/>

@@ -83,7 +83,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Fri Nov  6 05:51:20 2026
+<td>Fri Nov  6 18:26:40 2026
 </td>
 </tr>
 <tr>
@@ -97,24 +97,24 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <tr>
 <td class="label">Place & Route Process</td>
 <td>Running placement:
-   Placement Phase 0: CPU time = 0h 0m 4s, Elapsed time = 0h 0m 4s
-   Placement Phase 1: CPU time = 0h 0m 0.553s, Elapsed time = 0h 0m 0.554s
-   Placement Phase 2: CPU time = 0h 0m 11s, Elapsed time = 0h 0m 11s
+   Placement Phase 0: CPU time = 0h 0m 5s, Elapsed time = 0h 0m 5s
+   Placement Phase 1: CPU time = 0h 0m 0.62s, Elapsed time = 0h 0m 0.62s
+   Placement Phase 2: CPU time = 0h 0m 13s, Elapsed time = 0h 0m 13s
    Placement Phase 3: CPU time = 0h 0m 9s, Elapsed time = 0h 0m 9s
-   Total Placement: CPU time = 0h 0m 24s, Elapsed time = 0h 0m 24s
+   Total Placement: CPU time = 0h 0m 27s, Elapsed time = 0h 0m 27s
 Running routing:
-   Routing Phase 0: CPU time = 0h 0m 0.011s, Elapsed time = 0h 0m 0.011s
-   Routing Phase 1: CPU time = 0h 0m 0.642s, Elapsed time = 0h 0m 0.642s
-   Routing Phase 2: CPU time = 0h 0m 31s, Elapsed time = 0h 0m 31s
+   Routing Phase 0: CPU time = 0h 0m 0.014s, Elapsed time = 0h 0m 0.014s
+   Routing Phase 1: CPU time = 0h 0m 0.679s, Elapsed time = 0h 0m 0.679s
+   Routing Phase 2: CPU time = 0h 0m 26s, Elapsed time = 0h 0m 26s
    Routing Phase 3: CPU time = 0h 0m 0s, Elapsed time = 0h 0m 0s
-   Total Routing: CPU time = 0h 0m 31s, Elapsed time = 0h 0m 31s
+   Total Routing: CPU time = 0h 0m 27s, Elapsed time = 0h 0m 27s
 Generate output files:
    CPU time = 0h 0m 2s, Elapsed time = 0h 0m 2s
 </td>
 </tr>
 <tr>
 <td class="label">Total Time and Memory Usage</td>
-<td>CPU time = 0h 0m 58s, Elapsed time = 0h 0m 58s, Peak memory usage = 734MB</td>
+<td>CPU time = 0h 0m 56s, Elapsed time = 0h 0m 56s, Peak memory usage = 732MB</td>
 </tr>
 </table>
 <br/>
@@ -129,12 +129,12 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Logic</td>
-<td>16830/20736</td>
-<td>82%</td>
+<td>16726/20736</td>
+<td>81%</td>
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --LUT,ALU,ROM16</td>
-<td>16710(14224 LUT, 2486 ALU, 0 ROM16)</td>
+<td>16606(14123 LUT, 2483 ALU, 0 ROM16)</td>
 <td>-</td>
 </tr>
 <tr>
@@ -144,7 +144,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Register</td>
-<td>8995/15915</td>
+<td>8994/15915</td>
 <td>57%</td>
 </tr>
 <tr>
@@ -154,7 +154,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --Logic Register as FF</td>
-<td>8922/15552</td>
+<td>8921/15552</td>
 <td>58%</td>
 </tr>
 <tr>
@@ -169,7 +169,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">CLS</td>
-<td>9715/10368</td>
+<td>9689/10368</td>
 <td>94%</td>
 </tr>
 <tr>
@@ -301,7 +301,7 @@ Generate output files:
 <tr>
 <td class="label">clk143m</td>
 <td>PRIMARY</td>
-<td> BR BL</td>
+<td> TL BR</td>
 </tr>
 <tr>
 <td class="label">clk85m</td>
@@ -311,12 +311,12 @@ Generate output files:
 <tr>
 <td class="label">O_sdram_clk_d</td>
 <td>PRIMARY</td>
-<td> TR TL BR BL</td>
+<td> TR TL BL</td>
 </tr>
 <tr>
 <td class="label">clk42m</td>
 <td>PRIMARY</td>
-<td> TR TL BR BL</td>
+<td> TR BR BL</td>
 </tr>
 <tr>
 <td class="label">clk28m</td>
@@ -324,9 +324,9 @@ Generate output files:
 <td> BR BL</td>
 </tr>
 <tr>
-<td class="label">u_geo3d/u_engine/eya_16_9</td>
+<td class="label">u_geo3d/u_engine/fcur_87_8</td>
 <td>PRIMARY</td>
-<td> TL BL</td>
+<td> TR BR</td>
 </tr>
 <tr>
 <td class="label">ff_reset_n2</td>
@@ -349,22 +349,22 @@ Generate output files:
 <td> -</td>
 </tr>
 <tr>
-<td class="label">u_geo3d/u_engine/n28383_4</td>
+<td class="label">u_geo3d/u_engine/z_core_addr_4_6</td>
 <td>LW</td>
 <td> -</td>
 </tr>
 <tr>
-<td class="label">u_geo3d/u_engine/z_core_addr_4_10</td>
+<td class="label">u_geo3d/u_engine/n28383_7</td>
+<td>LW</td>
+<td> -</td>
+</tr>
+<tr>
+<td class="label">u_geo3d/u_engine/eya_16_11</td>
 <td>LW</td>
 <td> -</td>
 </tr>
 <tr>
 <td class="label">u_v9968/u_timing_control/u_sprite/ff_active</td>
-<td>LW</td>
-<td> -</td>
-</tr>
-<tr>
-<td class="label">u_hdmi_converter/reset28[1]</td>
 <td>LW</td>
 <td> -</td>
 </tr>

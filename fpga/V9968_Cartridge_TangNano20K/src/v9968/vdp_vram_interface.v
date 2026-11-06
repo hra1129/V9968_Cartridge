@@ -255,7 +255,7 @@ module vdp_vram_interface (
 	assign cpu_vram_ready		= is_access_timming_b ? ~w_vram_refresh : 1'b0;
 	assign command_vram_ready	= w_vram_refresh      ? 1'b0 :
 	                         	  is_access_timming_a ? ~(screen_mode_vram_valid | sprite_vram_valid) :
-	                         	  is_access_timming_b ? ~cpu_vram_valid : 1'b0;
+	                         	  is_access_timming_b ? ~(cpu_vram_valid | screen_mode_vram_valid | sprite_vram_valid) : 1'b0;
 
 	function [7:0] func_rdata_sel(
 		input	[1:0]	address,
