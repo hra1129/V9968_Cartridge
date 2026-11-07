@@ -12,27 +12,27 @@
   <Part Number>: GW2AR-LV18QN88C8/I7
   <Device>: GW2AR-18
   <Device Version>: C
-  <Created Time>:Fri Nov  6 18:26:40 2026
+  <Created Time>:Sat Nov  7 23:57:30 2026
 
 
 2. PnR Details
 
   Running placement:
-    Placement Phase 0: CPU time = 0h 0m 5s, Elapsed time = 0h 0m 5s
-    Placement Phase 1: CPU time = 0h 0m 0.62s, Elapsed time = 0h 0m 0.62s
-    Placement Phase 2: CPU time = 0h 0m 13s, Elapsed time = 0h 0m 13s
-    Placement Phase 3: CPU time = 0h 0m 9s, Elapsed time = 0h 0m 9s
-    Total Placement: CPU time = 0h 0m 27s, Elapsed time = 0h 0m 27s
+    Placement Phase 0: CPU time = 0h 0m 4s, Elapsed time = 0h 0m 4s
+    Placement Phase 1: CPU time = 0h 0m 0.589s, Elapsed time = 0h 0m 0.589s
+    Placement Phase 2: CPU time = 0h 0m 11s, Elapsed time = 0h 0m 11s
+    Placement Phase 3: CPU time = 0h 0m 7s, Elapsed time = 0h 0m 7s
+    Total Placement: CPU time = 0h 0m 22s, Elapsed time = 0h 0m 22s
  Running routing:
-    Routing Phase 0: CPU time = 0h 0m 0.014s, Elapsed time = 0h 0m 0.014s
-    Routing Phase 1: CPU time = 0h 0m 0.679s, Elapsed time = 0h 0m 0.679s
-    Routing Phase 2: CPU time = 0h 0m 26s, Elapsed time = 0h 0m 26s
+    Routing Phase 0: CPU time = 0h 0m 0.012s, Elapsed time = 0h 0m 0.012s
+    Routing Phase 1: CPU time = 0h 0m 0.661s, Elapsed time = 0h 0m 0.661s
+    Routing Phase 2: CPU time = 0h 0m 22s, Elapsed time = 0h 0m 22s
     Routing Phase 3: CPU time = 0h 0m 0s, Elapsed time = 0h 0m 0s
-    Total Routing: CPU time = 0h 0m 27s, Elapsed time = 0h 0m 27s
+    Total Routing: CPU time = 0h 0m 23s, Elapsed time = 0h 0m 23s
  Generate output files:
     CPU time = 0h 0m 2s, Elapsed time = 0h 0m 2s
 
- Total Time and Memory Usage: CPU time = 0h 0m 56s, Elapsed time = 0h 0m 56s, Peak memory usage = 732MB
+ Total Time and Memory Usage: CPU time = 0h 0m 47s, Elapsed time = 0h 0m 47s, Peak memory usage = 733MB
 
 
 3. Resource Usage Summary
@@ -40,15 +40,15 @@
   --------------------------------------------------------------------------------
   Resources                   | Usage                               | Utilization
   --------------------------------------------------------------------------------
-  Logic                       | 16726/20736                         |  81%
-    --LUT,ALU,ROM16           | 16606(14123 LUT, 2483 ALU, 0 ROM16) | -
+  Logic                       | 16827/20736                         |  82%
+    --LUT,ALU,ROM16           | 16707(14222 LUT, 2485 ALU, 0 ROM16) | -
     --SSRAM(RAM16)            | 20                                  | -
   Register                    | 8994/15915                          |  57%
     --Logic Register as Latch | 0/15552                             |  0%
     --Logic Register as FF    | 8921/15552                          |  58%
     --I/O Register as Latch   | 0/363                               |  0%
     --I/O Register as FF      | 73/363                              |  21%
-  CLS                         | 9689/10368                          |  94%
+  CLS                         | 9725/10368                          |  94%
   I/O Port                    | 41/66                               |  63%
   I/O Buf                     | 39                                  | -
     --Input Buf               | 16                                  | -
@@ -106,19 +106,19 @@
   Signal         | Global Clock   | Location
   -------------------------------------------
   clk14m_d       | PRIMARY        |  BR BL
-  clk143m        | PRIMARY        |  TL BR
+  ff_reset3_n2   | PRIMARY        |  TR TL BL
+  clk143m        | PRIMARY        |  BR BL
   clk85m         | PRIMARY        |  TR TL BR BL
-  O_sdram_clk_d  | PRIMARY        |  TR TL BL
-  clk42m         | PRIMARY        |  TR BR BL
+  O_sdram_clk_d  | PRIMARY        |  TR TL
+  clk42m         | PRIMARY        |  TR TL BR BL
   clk28m         | PRIMARY        |  BR BL
-  u_geo3d/u_engine/fcur_87_8| PRIMARY        |  TR BR
   ff_reset_n2    | LW             |  -
   ff_reset2_n2   | LW             |  -
   n18_6          | LW             |  -
   u_geo3d/rst_e  | LW             |  -
   u_geo3d/u_engine/z_core_addr_4_6| LW             |  -
   u_geo3d/u_engine/n28383_7| LW             |  -
-  u_geo3d/u_engine/eya_16_11| LW             |  -
+  u_geo3d/u_engine/eya_16_10| LW             |  -
   u_v9968/u_timing_control/u_sprite/ff_active| LW             |  -
   clk143m        | HCLK           | BANK4_BANK5_HCLK0
   ===========================================

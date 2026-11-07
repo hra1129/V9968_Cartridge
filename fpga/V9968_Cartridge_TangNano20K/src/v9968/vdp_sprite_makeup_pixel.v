@@ -889,7 +889,8 @@ module vdp_sprite_makeup_pixel (
 	end
 
 	// --------------------------------------------------------------------
-	//	[delay 3...15,0,1,2] Mix 16 planes
+	//	[delay 4...15,0,1,2,3] Mix 16 planes
+	//	plane N を phase N で選択し、ff_color_* に届くのは phase N+4。
 	// --------------------------------------------------------------------
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
@@ -899,8 +900,8 @@ module vdp_sprite_makeup_pixel (
 			ff_pre_pixel_color_fix			<= 1'b0;
 			ff_pre_pixel_cc0_found			<= 1'b0;
 		end
-		else if( w_sub_phase == 4'd3 ) begin
-			//	最初のスプライトプレーン。w_sub_phase = 3 → 1番目。4 → 2番目。 ... 2 → 16番目。
+		else if( w_sub_phase == 4'd4 ) begin
+			//	最初のスプライトプレーン。w_sub_phase = 4 → 1番目。5 → 2番目。 ... 3 → 16番目。
 			if( reg_sprite_mode3 ) begin
 				//	Sprite mode3 の場合
 				if( ff_color_en ) begin
@@ -943,7 +944,7 @@ module vdp_sprite_makeup_pixel (
 			end
 		end
 		else begin
-			//	２番目以降スプライトプレーン。w_sub_phase = 3 → 1番目。4 → 2番目。 ... 2 → 16番目。
+			//	２番目以降スプライトプレーン。w_sub_phase = 4 → 1番目。5 → 2番目。 ... 3 → 16番目。
 			if( ff_pre_pixel_color_fix ) begin
 				//	hold
 			end
@@ -1007,7 +1008,8 @@ module vdp_sprite_makeup_pixel (
 		end
 	end
 
-	assign w_collision_hit = w_sub_phase != 4'd1 && ff_pre_pixel_color_en && ff_color_en &&
+	//	phase 4 は最初のプレーンで、ff_pre_pixel_* は前の画素の結果なので判定しない
+	assign w_collision_hit = w_sub_phase != 4'd4 && ff_pre_pixel_color_en && ff_color_en &&
 		!ff_color_ic && !ff_color_cc &&
 		(ff_pre_pixel_color[3:0] != 4'd0 || (!reg_sprite_mode3 && reg_color0_opaque));
 
@@ -1041,7 +1043,7 @@ module vdp_sprite_makeup_pixel (
 	end
 
 	// --------------------------------------------------------------------
-	//	[delay 9] latch pixel color
+	//	latch pixel color (16 プレーンの合成が完了した直後)
 	// --------------------------------------------------------------------
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
@@ -1054,7 +1056,7 @@ module vdp_sprite_makeup_pixel (
 			ff_pixel_color_transparent	<= 2'd0;
 			ff_pixel_color				<= 8'd0;
 		end
-		else if( w_sub_phase == 4'd3 ) begin
+		else if( w_sub_phase == 4'd4 ) begin
 			ff_pixel_color_en			<= ff_pre_pixel_color_en;
 			ff_pixel_color_transparent	<= ff_pre_pixel_color_transparent;
 			ff_pixel_color				<= ff_pre_pixel_color;
