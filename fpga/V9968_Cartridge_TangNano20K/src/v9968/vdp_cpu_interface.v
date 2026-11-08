@@ -885,8 +885,12 @@ module vdp_cpu_interface (
 				ff_frame_interrupt <= 1'b1;
 			end
 
-			if( ff_register_write && (ff_register_num == 6'd0) && (ff_1st_byte[4] == 1'b0) ) begin
-				//	IE1 disabled by R#0 write: clear pending line interrupt (V9938 behavior)
+			//	FH が次フレームへ持ち越されると、IE1=1 にした瞬間に割り込みが入ってしまう
+			//	(ZANAC EX, Space Manbow)。VSYNC と R#0/R#19 書き込みでクリアする。
+			if( clear_line_interrupt || intr_frame ) begin
+				ff_line_interrupt <= 1'b0;
+			end
+			else if( ff_register_write && (ff_register_num == 6'd0 || ff_register_num == 6'd19) ) begin
 				ff_line_interrupt <= 1'b0;
 			end
 			else if( intr_line ) begin
