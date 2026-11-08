@@ -801,6 +801,7 @@ module tb_sprite_overmap_status ();
 	reg bus_ioreq;
 	reg bus_write;
 	reg bus_valid;
+	reg [7:0] bus_wdata;
 	wire bus_ready;
 	wire [7:0] bus_rdata;
 	wire bus_rdata_en;
@@ -818,7 +819,7 @@ module tb_sprite_overmap_status ();
 		.bus_write(bus_write),
 		.bus_valid(bus_valid),
 		.bus_ready(bus_ready),
-		.bus_wdata(8'd0),
+		.bus_wdata(bus_wdata),
 		.bus_rdata(bus_rdata),
 		.bus_rdata_en(bus_rdata_en),
 		.bus_write_done(),
@@ -946,6 +947,47 @@ module tb_sprite_overmap_status ();
 		end
 	endtask
 
+	task automatic write_port;
+		input [2:0] address;
+		input [7:0] data;
+		begin
+			bus_ioreq = 1'b1;
+			bus_address = address;
+			bus_write = 1'b1;
+			bus_wdata = data;
+			bus_valid = 1'b1;
+			while (bus_ready !== 1'b1) begin
+				@(posedge clk);
+				#1;
+			end
+			@(posedge clk);
+			#1;
+			bus_valid = 1'b0;
+			bus_write = 1'b0;
+			bus_ioreq = 1'b0;
+			repeat (4) @(posedge clk);
+			#1;
+		end
+	endtask
+
+	task automatic write_register;
+		input [5:0] num;
+		input [7:0] data;
+		begin
+			write_port(3'd1, data);
+			write_port(3'd1, { 2'b10, num });
+		end
+	endtask
+
+	task automatic pulse_intr_frame;
+		begin
+			intr_frame = 1'b1;
+			@(posedge clk);
+			#1;
+			intr_frame = 1'b0;
+		end
+	endtask
+
 	initial begin
 		clk = 1'b0;
 		reset_n = 1'b0;
@@ -953,6 +995,7 @@ module tb_sprite_overmap_status ();
 		bus_ioreq = 1'b0;
 		bus_write = 1'b0;
 		bus_valid = 1'b0;
+		bus_wdata = 8'd0;
 		intr_frame = 1'b0;
 		sprite_overmap = 1'b0;
 		sprite_overmap_id = 5'd31;
@@ -970,7 +1013,8 @@ module tb_sprite_overmap_status ();
 		if (sprite_overmap_enable !== 1'b0) begin
 			$fatal(1, "Overmap detection enabled while frame interrupt is pending");
 		end
-		read_status0(1'b1, 5'd6);
+		//	Sprite mode1 (reset default): 5S set before F is hidden while F=1, and the read clears it
+		read_status0(1'b0, 5'd6);
 		if (sprite_overmap_enable !== 1'b1) begin
 			$fatal(1, "Overmap detection disabled after status #0 read");
 		end
@@ -981,6 +1025,32 @@ module tb_sprite_overmap_status ();
 		repeat (3) @(posedge clk);
 		#1;
 		read_status0(1'b1, 5'd10);
+
+		//	Sprite mode2 (SCREEN5): 5S set before F is hidden while F=1, and the read clears it
+		write_register(6'd0, 8'h06);
+		sprite_overmap = 1'b1;
+		sprite_overmap_id = 5'd12;
+		repeat (3) @(posedge clk);
+		#1;
+		pulse_intr_frame();
+		read_status0(1'b0, 5'd12);
+		if (sprite_overmap !== 1'b0) begin
+			$fatal(1, "Masked status #0 read did not clear sprite overmap");
+		end
+		//	F=0: 5S is visible in sprite mode2
+		sprite_overmap = 1'b1;
+		sprite_overmap_id = 5'd13;
+		repeat (3) @(posedge clk);
+		#1;
+		read_status0(1'b1, 5'd13);
+		//	Sprite mode3 on SCREEN0 is also masked
+		write_register(6'd0, 8'h00);
+		write_port(3'd4, 8'h00);
+		write_register(6'd20, 8'h08);
+		sprite_overmap = 1'b1;
+		sprite_overmap_id = 5'd14;
+		pulse_intr_frame();
+		read_status0(1'b0, 5'd14);
 		$display("Sprite overmap status read test PASSED");
 		$finish;
 	end

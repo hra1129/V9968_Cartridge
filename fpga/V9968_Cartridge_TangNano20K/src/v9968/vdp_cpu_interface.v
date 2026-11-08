@@ -255,6 +255,7 @@ module vdp_cpu_interface (
 	wire				w_line_interrupt;
 	wire				w_frame_interrupt;
 	wire				w_command_end_interrupt;
+	wire				w_status_sprite_overmap;
 
 	reg		[1:0]		ff_button1 = 2'd0;
 	reg		[1:0]		ff_button2 = 2'd0;
@@ -788,9 +789,13 @@ module vdp_cpu_interface (
 	//	Read data latch
 	// --------------------------------------------------------------------
 
+	//	F=1 の間は S#0 bit6 (5S) を 0 として読ませる (bit6 = 5S AND NOT F)。
+	//	映像期間中に立った 5S を VSYNC 割り込み処理から見せない (Dragon Quest II のタイトル対策)。
+	assign w_status_sprite_overmap	= sprite_overmap & ~ff_frame_interrupt;
+
 	always @( posedge clk ) begin
 		case( ff_status_register_pointer )
-		4'd0:		ff_status_register <= { ff_frame_interrupt, sprite_overmap, sprite_collision, sprite_overmap_id };
+		4'd0:		ff_status_register <= { ff_frame_interrupt, w_status_sprite_overmap, sprite_collision, sprite_overmap_id };
 		4'd1:		ff_status_register <= { 2'd0, ff_v9958_mode ? c_v9958id: c_v9968id, ff_line_interrupt };
 		4'd2:		ff_status_register <= { status_transfer_ready, status_vsync, status_hsync, status_border_detect, 2'b11, status_field, status_command_execute };
 		4'd3:		ff_status_register <= sprite_collision_x[7:0];

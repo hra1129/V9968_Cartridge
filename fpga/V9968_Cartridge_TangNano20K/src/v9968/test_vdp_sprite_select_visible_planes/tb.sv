@@ -90,6 +90,7 @@ module tb ();
 	wire		[5:0]	selected_plane_num;
 	wire		[31:0]	selected_attribute;
 	wire		[4:0]	selected_count;
+	wire		[8:0]	selected_pixel_pos_y;
 	wire				start_info_collect;
 	wire				sprite_overmap;
 	wire		[4:0]	sprite_overmap_id;
@@ -118,7 +119,8 @@ module tb ();
 		.selected_plane_num				( selected_plane_num				),
 		.selected_attribute				( selected_attribute				),
 		.selected_count					( selected_count					),
-		.start_info_collect				( start_info_collect				),
+		.selected_pixel_pos_y		( selected_pixel_pos_y				),
+		.start_info_collect			( start_info_collect				),
 		.clear_sprite_overmap			( clear_sprite_overmap				),
 		.sprite_overmap_enable		( sprite_overmap_enable			),
 		.sprite_overmap					( sprite_overmap					),
@@ -139,6 +141,9 @@ module tb ();
 	// --------------------------------------------------------------------
 	//	VRAM simulation
 	// --------------------------------------------------------------------
+	integer			mid_change_x = -1;
+	reg		[7:0]	mid_change_y = 8'd0;
+
 	always @( posedge clk ) begin
 		if( vram_valid ) begin
 			// Extract plane number from VRAM address
@@ -187,10 +192,14 @@ module tb ();
 		reg [31:0] observed_planes;
 		begin
 			observed_planes = 32'd0;
+			//	In the real SSG, pixel_pos_y is already updated when screen_pos_x == 3FFF.
+			pixel_pos_y = scan_y;
 			screen_pos_x = 14'h3FFF;
 			wait_cycles(1);
 			#1;
-			pixel_pos_y = scan_y;
+			if( selected_pixel_pos_y !== { 1'b0, scan_y } ) begin
+				$fatal(1, "Latched pixel Y mismatch: expected %03X, observed %03X", { 1'b0, scan_y }, selected_pixel_pos_y);
+			end
 			screen_pos_x = 14'd0;
 			screen_v_active = 1'b1;
 			screen_h_active = 1'b1;
@@ -216,6 +225,13 @@ module tb ();
 				end
 				#1;
 				screen_pos_x = scan_x + 14'd1;
+				if( scan_x == mid_change_x ) begin
+					//	R#23 rewritten by the CPU in the middle of the plane scan
+					pixel_pos_y = mid_change_y;
+					if( selected_pixel_pos_y !== { 1'b0, scan_y } ) begin
+						$fatal(1, "Latched pixel Y changed during scan: expected %03X, observed %03X", { 1'b0, scan_y }, selected_pixel_pos_y);
+					end
+				end
 			end
 			
 			screen_pos_x = 14'h3FFF;
@@ -409,6 +425,51 @@ module tb ();
 		simulate_scanline(8'd40, 32'h0000FFFF);
 		if( sprite_overmap !== 1'b1 ) begin
 			$fatal(1, "SpriteMode3 overflow flag not set");
+		end
+
+		$display("=== Test 10: R#23 change during plane scan does not mix lines ===");
+		//	Dragon Quest II title: 16x16 sprites, 8 planes on Y=1F row and 8 planes on Y=2F row.
+		//	Changing the line from 2Fh to 30h between plane 1 and plane 2 used to see 10 planes.
+		clear_sprite_overmap = 1'b1;
+		wait_cycles(1);
+		#1;
+		clear_sprite_overmap = 1'b0;
+		reg_sprite_mode3 = 1'b0;
+		sprite_mode2 = 1'b1;
+		reg_sprite_16x16 = 1'b1;
+		reg_sprite_magify = 1'b0;
+		for( i = 0; i < 32; i = i + 1 ) begin
+			sprite_attr_table[i] = 32'h000000D8;
+		end
+		sprite_attr_table[0]  = 32'h0000581F;	sprite_attr_table[1]  = 32'h0000681F;
+		sprite_attr_table[2]  = 32'h0000582F;	sprite_attr_table[3]  = 32'h0000682F;
+		sprite_attr_table[4]  = 32'h0000583F;	sprite_attr_table[5]  = 32'h0000683F;
+		sprite_attr_table[6]  = 32'h0000781F;	sprite_attr_table[7]  = 32'h0000881F;
+		sprite_attr_table[8]  = 32'h0000782F;	sprite_attr_table[9]  = 32'h0000882F;
+		sprite_attr_table[10] = 32'h0000883F;	sprite_attr_table[11] = 32'h0000581F;
+		sprite_attr_table[12] = 32'h0000681F;	sprite_attr_table[13] = 32'h0000582F;
+		sprite_attr_table[14] = 32'h0000682F;	sprite_attr_table[15] = 32'h0000583F;
+		sprite_attr_table[16] = 32'h0000683F;	sprite_attr_table[17] = 32'h0000781F;
+		sprite_attr_table[18] = 32'h0000881F;	sprite_attr_table[19] = 32'h0000782F;
+		sprite_attr_table[20] = 32'h0000882F;
+		sprite_attr_table[21] = 32'h000000D8;
+		mid_change_x = 14'd128 * 2 + 14'd64;
+		mid_change_y = 8'h2F;
+		simulate_scanline(8'h2E, 32'h000618C3);
+		mid_change_x = -1;
+		if( sprite_overmap !== 1'b0 ) begin
+			$fatal(1, "R#23 change mixed lines and set overmap (id=%d)", sprite_overmap_id);
+		end
+
+		$display("=== Test 11: non-R#23 mode latches screen Y for collision coordinates ===");
+		reg_sprite_nonR23_mode = 1'b1;
+		screen_pos_y = 9'h123;
+		pixel_pos_y = 8'h55;
+		screen_pos_x = 14'h3FFF;
+		wait_cycles(1);
+		#1;
+		if( selected_pixel_pos_y !== 9'h123 ) begin
+			$fatal(1, "Non-R#23 pixel Y mismatch: expected 123, observed %03X", selected_pixel_pos_y);
 		end
 
 		$display("=== Test completed ===");

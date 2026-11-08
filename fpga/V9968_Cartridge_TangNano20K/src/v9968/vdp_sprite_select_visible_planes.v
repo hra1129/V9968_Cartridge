@@ -76,6 +76,7 @@ module vdp_sprite_select_visible_planes (
 	output		[31:0]	selected_attribute,
 
 	output		[4:0]	selected_count,
+	output		[8:0]	selected_pixel_pos_y,
 	output				start_info_collect,
 
 	input				clear_sprite_overmap,
@@ -100,6 +101,7 @@ module vdp_sprite_select_visible_planes (
 	wire		[2:0]	w_phase;
 	wire		[3:0]	w_sub_phase;
 	wire		[8:0]	w_pixel_pos_y;
+	reg			[8:0]	ff_pixel_pos_y;
 	reg			[5:0]	ff_plane_count;
 	reg			[5:0]	ff_current_plane_num;		//	Plane#0...#63
 	reg			[5:0]	ff_current_plane_num_start;	//	Plane#0...#63
@@ -306,7 +308,19 @@ module vdp_sprite_select_visible_planes (
 	assign w_y				= reg_sprite_mode3 ? w_attribute[9:0] : { 2'd0, w_attribute[7:0] };
 	assign w_mgy			= w_attribute[23:16];
 
-	assign w_pixel_pos_y	= reg_sprite_nonR23_mode ? screen_pos_y     : { 1'b0, pixel_pos_y };
+	//	R#23 は即時反映されるため、ライン開始時にラッチし、走査途中の書き換えで
+	//	前後のラインの判定結果が混ざらない (5S 誤検出しない) ようにする
+	always @( posedge clk ) begin
+		if( !reset_n ) begin
+			ff_pixel_pos_y <= 9'd0;
+		end
+		else if( screen_pos_x == 14'h3FFF ) begin
+			ff_pixel_pos_y <= reg_sprite_nonR23_mode ? screen_pos_y : { 1'b0, pixel_pos_y };
+		end
+	end
+
+	assign w_pixel_pos_y	= ff_pixel_pos_y;
+	assign selected_pixel_pos_y	= ff_pixel_pos_y;
 	assign w_offset_y		= { w_pixel_pos_y[8], w_pixel_pos_y } - w_y;
 	assign w_attribute_y	= reg_sprite_mode3 ? w_offset_y[7:0]: ( reg_sprite_magify ? { 3'd0, w_offset_y[4:1] }: { 3'd0, w_offset_y[3:0] } );
 
