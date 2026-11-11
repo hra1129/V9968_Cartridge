@@ -62,7 +62,7 @@
 //	・ロゴ本体の描画 (VDP コマンド) は省略する。衝突判定用スプライトのみ配置する。
 //
 //	期待値: 走査線 N の衝突に応答して書いた {R#26, R#27} が、走査線 N+apply_line (既定 2) の
-//	実効値になること。実効値のラッチは OCM-PLD 準拠 (R#27: X=-16, R#26: X=-9+R#27)。
+//	実効値になること。実効値のラッチは R#26/R#27 同時、固定位置 X=267 (timing.md)。
 //	表示期間中に実効値が変化した場合は MIDLINE として数える。
 //	判定:
 //		OK        ... 期待値どおり
@@ -90,6 +90,7 @@ module tb ();
 	//	ロゴは 50 フレーム。シミュレーションする範囲を -g で指定する
 	parameter integer	first_frame		= 0;
 	parameter integer	num_frames		= 8;
+	integer				cur_frame		= -1;
 	//	CPU と VDP の位相 (VDP クロック単位, 0-23)
 	parameter integer	cpu_phase		= 0;
 	//	走査線 N の衝突に応答した書き込みを期待する走査線 (N + apply_line)
@@ -191,9 +192,9 @@ module tb ();
 	wire	[ 9:0]	m_sy		= `SSG.ff_screen_pos_y;
 	wire	[13:0]	m_wx		= `SSG.w_screen_pos_x;
 	wire	[ 2:0]	m_eff_l		= `SSG.ff_horizontal_offset_l;
-	//	vdp_timing_control_ssg.v の実効値ラッチ条件と同じ (R#27: X=-16, R#26: X=-9+R#27)
-	wire			m_latch_l	= (m_wx == { 10'h3EF, 4'hF });
-	wire			m_latch_h	= ((m_wx[13:4] - { 7'd0, m_eff_l }) == 10'h3F6) && (m_wx[3:0] == 4'hF);
+	//	vdp_timing_control_ssg.v の実効値ラッチ条件と同じ (R#26/R#27 を X=266/F で組でラッチ)
+	wire			m_latch_l	= (m_wx == { 10'd266, 4'hF });
+	wire			m_latch_h	= m_latch_l;
 
 	//	表示期間中 (X=0..255) に実効値が変化したら数える
 	integer			n_midline;
@@ -210,6 +211,100 @@ module tb ();
 	function automatic integer dot( input [13:0] x );
 		dot = $signed( x[13:4] );
 	endfunction
+
+	// --------------------------------------------------------------------
+	//	画素照合: VRAM に乱数パターンを直接書き込み、BG 出力 (2bit/hires 画素) が
+	//	実効スクロール量どおりの位置から読まれているかを走査線ごとに確かめる。
+	//	一致位置 s と 2*スクロール量 の差 (パイプライン定数) が全ラインで一定なら正常。
+	// --------------------------------------------------------------------
+	`define SCRN	tb.u_vdp_cartridge.u_v9968.u_timing_control.u_screen_mode
+	localparam integer	c_pix_x0	= 24;
+	localparam integer	c_pix_x1	= 232;
+	byte unsigned	vram_img	[0:65535];
+	bit		[1:0]	pix_cap		[0:1023];
+	integer			pix_n		= 0;
+	bit				pix_enable	= 0;
+	integer			pix_c0		= -1;
+	integer			n_pix_ok	= 0;
+	integer			n_pix_ng	= 0;
+	integer			n_pix_none	= 0;
+	integer			pix_sc		= -1;
+
+	function automatic [1:0] ring_px( input integer y, input integer j );
+		integer a;
+		a			= ( (j >> 9) & 1 ) * 32'h8000 + y * 128 + ( (j & 511) >> 2 );
+		ring_px		= ( vram_img[a] >> ( 6 - 2 * (j & 3) ) ) & 2'd3;
+	endfunction
+
+	task automatic pix_check( input integer y, input integer sc );
+		integer s, i, found, n_found, c;
+		bit ok;
+		n_found = 0;
+		found	= -1;
+		for( s = 0; s < 1024; s++ ) begin
+			ok = 1;
+			for( i = 0; i < pix_n; i++ ) begin
+				if( ring_px( y, (s + i) & 1023 ) != pix_cap[i] ) begin
+					ok = 0;
+					break;
+				end
+			end
+			if( ok ) begin
+				if( n_found == 0 ) found = s;
+				n_found++;
+			end
+		end
+		if( n_found != 1 ) begin
+			n_pix_none++;
+			$display( "[PIX] frame%0d line%0d: no unique match (%0d candidates)", cur_frame, y, n_found );
+			return;
+		end
+		c = ( found - 2 * sc ) & 1023;
+		if( pix_c0 < 0 ) begin
+			pix_c0 = c;
+			$display( "[PIX] pipeline constant = %0d (frame%0d line%0d)", c, cur_frame, y );
+		end
+		if( c == pix_c0 ) begin
+			n_pix_ok++;
+		end
+		else begin
+			n_pix_ng++;
+			$display( "[PIX] frame%0d line%0d NG: scroll=%0d drawn_at=%0d (diff %0d hires px)",
+				cur_frame, y, sc, (found - pix_c0) & 1023, $signed( ((c - pix_c0 + 512) & 1023) - 512 ) );
+		end
+	endtask
+
+	always @( posedge clk14m ) begin
+		if( pix_enable && cur_frame >= 0 && !m_sx[13] && m_sy < 10'd192 ) begin
+			if( m_sx == { 10'd0, 4'd0 } ) begin
+				pix_n = 0;
+			end
+			else if( dot( m_sx ) >= c_pix_x0 && dot( m_sx ) < c_pix_x1 && (m_sx[3:0] == 4'd3 || m_sx[3:0] == 4'd11) ) begin
+				pix_cap[ pix_n ] = `SCRN.ff_display_color[1:0];
+				pix_n++;
+			end
+			else if( m_sx == { 10'd128, 4'd0 } ) begin
+				pix_sc = scroll_of( `SSG.ff_horizontal_offset_h, `SSG.ff_horizontal_offset_l );
+			end
+			else if( m_sx == { 10'd240, 4'd0 } ) begin
+				if( pix_sc >= 0 ) pix_check( m_sy, pix_sc );
+				pix_sc = -1;
+			end
+		end
+	end
+
+	task automatic pix_fill_vram;
+		integer a, p, w;
+		byte unsigned v;
+		for( p = 0; p < 2; p++ ) begin
+			for( a = 0; a < 212 * 128; a++ ) begin
+				w = p * 32'h8000 + a;
+				v = $urandom;
+				vram_img[w] = v;
+				tb.u_sdram.Bank0[ w >> 2 ][ 8 * (w & 3) +: 8 ] = v;
+			end
+		end
+	endtask
 
 	function automatic integer scroll_of( input [5:0] h, input [2:0] l );
 		scroll_of = h * 8 - l;
@@ -250,7 +345,6 @@ module tb ();
 	integer			latch_x		[0:1023];
 	integer			w26_x_min, w26_x_max, w27_x_min, w27_x_max;
 
-	integer			cur_frame;
 	integer			cur_scroll;
 	integer			fd;
 
@@ -641,7 +735,11 @@ module tb ();
 		z_vdp_reg( 6'd6, 8'h0F );
 		z_vdp_reg( 6'd7, 8'h05 );
 		$display( "[LOGO] Write sprite tables" );
+		pix_fill_vram();
 		z_vram_fill( 17'h07800, 'h30, 8'hFF );
+		if( tb.u_sdram.Bank0[ 17'h07800 >> 2 ] !== 32'hFFFFFFFF ) begin
+			$fatal( 1, "[PIX] SDRAM model address mapping mismatch: %08X", tb.u_sdram.Bank0[ 17'h07800 >> 2 ] );
+		end
 		z_vram_fill( 17'h07830, 'h10, 8'hF0 );
 		z_vram_fill( 17'h07400, 'h200, 8'h05 );
 		z_vram_address( 17'h07600 );
@@ -666,6 +764,7 @@ module tb ();
 		z_vdp_reg( 6'd27, { 5'd0, p[2:0] } );
 		z_wait_display_start();
 		z_vdp_reg( 6'd1, 8'h63 );
+		pix_enable = 1;
 
 		for( f = 0; f < first_frame + num_frames && f < n_frames_all; f++ ) begin
 			if( f < first_frame ) continue;
@@ -690,7 +789,8 @@ module tb ();
 			min_margin27, max_coll_to_w27 );
 		$display( "[LOGO] write position (X on collision line + 1): R#26 = %0d .. %0d, R#27 = %0d .. %0d, MIDLINE = %0d",
 			w26_x_min, w26_x_max, w27_x_min, w27_x_max, n_midline );
-		if( n_stale != 0 || n_mix27 != 0 || n_mix26 != 0 || n_other != 0 || n_late != 0 || n_midline != 0 ) begin
+		$display( "[PIX] SUMMARY: OK=%0d NG=%0d NO_MATCH=%0d (constant=%0d)", n_pix_ok, n_pix_ng, n_pix_none, pix_c0 );
+		if( n_stale != 0 || n_mix27 != 0 || n_mix26 != 0 || n_other != 0 || n_late != 0 || n_midline != 0 || n_pix_ng != 0 || n_pix_none != 0 ) begin
 			$fatal( 1, "[LOGO] unexpected scroll mismatches" );
 		end
 		$fclose( fd );

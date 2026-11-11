@@ -279,13 +279,13 @@ module tb_scroll_group_alignment ();
 		end
 		wait (horizontal_offset_l == 3'd3);
 		#1;
-		if (u_ssg.ff_horizontal_offset_h !== 6'd0 || screen_pos_x_clone !== 14'h3EFF) begin
-			$fatal(1, "R#27 was not latched at X=-17 (OCM pre dot counter start): X=%0h", screen_pos_x_clone);
+		if (u_ssg.ff_horizontal_offset_h !== 6'd2 || screen_pos_x_clone !== 14'h10AF) begin
+			$fatal(1, "R#26/R#27 were not latched together at X=266/F: X=%0h", screen_pos_x_clone);
 		end
 		wait (u_ssg.ff_horizontal_offset_h == 6'd2);
 		#1;
-		if (horizontal_offset_l !== 3'd3 || screen_pos_x_clone !== 14'h3F9F) begin
-			$fatal(1, "R#26 was not latched at X=-10+R#27 (OCM HSYNC): X=%0h", screen_pos_x_clone);
+		if (horizontal_offset_l !== 3'd3 || 		screen_pos_x_clone !== 14'h10AF) begin
+					$fatal(1, "R#26 was not latched with R#27: X=%0h", screen_pos_x_clone);
 		end
 		wait (screen_pos_x_clone == 14'd100);
 		#1;
@@ -298,17 +298,17 @@ module tb_scroll_group_alignment ();
 		end
 		wait (horizontal_offset_l == 3'd0);
 		#1;
-		if (u_ssg.ff_horizontal_offset_h !== 6'd2 || screen_pos_x_clone !== 14'h3EFF) begin
+		if (u_ssg.ff_horizontal_offset_h !== 6'd4 || screen_pos_x_clone !== 14'h10AF) begin
 			$fatal(1, "R#27 decrease latch mismatch: low=%0d high=%0d X=%0h",
 				horizontal_offset_l, u_ssg.ff_horizontal_offset_h, screen_pos_x_clone);
 		end
 		wait (u_ssg.ff_horizontal_offset_h == 6'd4);
 		#1;
-		if (horizontal_offset_l !== 3'd0 || screen_pos_x_clone !== 14'h3F6F) begin
+		if (horizontal_offset_l !== 3'd0 || screen_pos_x_clone !== 14'h10AF) begin
 			$fatal(1, "R#26 decrease latch mismatch: low=%0d high=%0d X=%0h",
 				horizontal_offset_l, u_ssg.ff_horizontal_offset_h, screen_pos_x_clone);
 		end
-		$display("R#27 (X=-16) and R#26 (X=-9+R#27) latch before active video for both scroll directions");
+		$display("R#26/R#27 latch together at X=267 for both scroll directions");
 		$finish;
 	end
 

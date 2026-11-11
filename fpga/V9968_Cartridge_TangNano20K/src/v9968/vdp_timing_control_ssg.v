@@ -110,8 +110,7 @@ module vdp_timing_control_ssg (
 	localparam			c_intr_line_timing		= 13'd4864;
 	localparam			c_intr_frame_timing192	= 10'd191;
 	localparam			c_intr_frame_timing212	= 10'd211;
-	localparam			c_reg27_latch_pos		= { 10'h3EF, 4'hF };	//	X = -17, last sub phase
-	localparam			c_reg26_latch_x			= 10'h3F6;				//	X - R#27 = -10
+	localparam			c_scroll_latch_pos		= { 10'd266, 4'hF };	//	X = 266, last sub phase (effective from X = 267)
 	reg			[11:0]	ff_h_count;
 	reg			[12:0]	ff_half_count;
 	reg			[ 9:0]	ff_v_count;					/* synthesis syn_preserve = 1 */
@@ -153,25 +152,17 @@ module vdp_timing_control_ssg (
 	assign w_half_line_shift	= ff_field & (reg_interlace_mode | reg_flat_interlace_mode);
 
 	// --------------------------------------------------------------------
-	//	Latch horizontal scroll register (OCM-PLD compatible timing)
-	//		R#27 : fixed position, effective from X = -16
-	//		R#26 : internal HSYNC position, effective from X = -9 + R#27 (latched)
+	//	Latch horizontal scroll registers
+	//		R#26 and R#27 are latched together at a fixed position (see timing.md).
+	//		X = 267 is just after the last R#27-shifted event (start_info_collect at X <= 266).
 	// --------------------------------------------------------------------
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_horizontal_offset_l <= 3'd0;
-		end
-		else if( w_screen_pos_x == c_reg27_latch_pos ) begin
-			ff_horizontal_offset_l <= reg_horizontal_offset_l;
-		end
-	end
-
-	always @( posedge clk ) begin
-		if( !reset_n ) begin
 			ff_horizontal_offset_h <= 6'd0;
 		end
-		else if( (w_screen_pos_x[13:4] - { 7'd0, ff_horizontal_offset_l }) == c_reg26_latch_x &&
-				  w_screen_pos_x[3:0] == 4'hF ) begin
+		else if( w_screen_pos_x == c_scroll_latch_pos ) begin
+			ff_horizontal_offset_l <= reg_horizontal_offset_l;
 			ff_horizontal_offset_h <= reg_horizontal_offset_h;
 		end
 	end

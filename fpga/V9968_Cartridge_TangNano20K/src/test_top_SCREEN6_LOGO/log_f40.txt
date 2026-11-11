@@ -1,0 +1,65 @@
+# vsim -c -t 1ns -l ..\log_f40.txt -do "run -all; quit -f" tb -gnum_frames=3 -gfirst_frame=40 
+# Start time: 20:01:52 on Nov 11,2026
+# Loading sv_std.std
+# Loading work.tb
+# Loading work.tangnano20k_vdp_cartridge
+# Loading work.Gowin_rPLL
+# Loading work.Gowin_rPLL2
+# Loading work.Gowin_CLKDIV
+# Loading work.msx_slot
+# Loading work.geo3d_bus
+# Loading work.geo3d_engine
+# Loading work.geo3d_core
+# Loading work.system_controller
+# Loading work.ip_spi_rom
+# Loading work.vdp
+# Loading work.vdp_cpu_interface
+# Loading work.vdp_timing_control
+# Loading work.vdp_timing_control_ssg
+# Loading work.vdp_timing_control_screen_mode
+# Loading work.vdp_timing_control_sprite
+# Loading work.vdp_sprite_select_visible_planes
+# Loading work.vdp_sprite_info_collect
+# Loading work.vdp_sprite_makeup_pixel
+# Loading work.vdp_sprite_divide_table
+# Loading work.vdp_command
+# Loading work.vdp_command_cache
+# Loading work.vdp_vram_interface
+# Loading work.vdp_color_palette
+# Loading work.vdp_color_palette_ram
+# Loading work.vdp_upscan
+# Loading work.vdp_upscan_line_buffer
+# Loading work.vdp_video_out
+# Loading work.vdp_video_double_buffer
+# Loading work.vdp_video_ram_line_buffer
+# Loading work.vdp_video_out_bilinear
+# Loading work.hdmi_converter
+# Loading work.hdmi_tx
+# Loading work.ip_sdram
+# Loading work.ip_ws2812_led
+# Loading work.ip_debugger
+# Loading work.mt48lc2m32b2
+# ** Warning: (vsim-2685) [TFMPC] - Too few port connections for 'u_vdp_cartridge'.  Expected 33, found 27.
+#    Time: 0 ns  Iteration: 0  Instance: /tb/u_vdp_cartridge File: C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv Line: 133
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(133): [TFMPC] - Missing connection for port 'mspi_cs'.
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(133): [TFMPC] - Missing connection for port 'mspi_clk'.
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(133): [TFMPC] - Missing connection for port 'mspi_hold'.
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(133): [TFMPC] - Missing connection for port 'mspi_wp'.
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(133): [TFMPC] - Missing connection for port 'mspi_do'.
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(133): [TFMPC] - Missing connection for port 'mspi_di'.
+# ** Warning: (vsim-2685) [TFMPC] - Too few port connections for 'u_pll'.  Expected 3, found 2.
+#    Time: 0 ns  Iteration: 0  Instance: /tb/u_vdp_cartridge/u_pll File: C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/../tangnano20k_vdp_cartridge.v Line: 184
+# ** Warning: (vsim-3722) C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/../tangnano20k_vdp_cartridge.v(184): [TFMPC] - Missing connection for port 'lock'.
+# run -all
+# [LOGO] Wait initialization
+# [LOGO] Write sprite tables
+# [LOGO] frame40 scroll=5 (R#26,R#27)=(1,3)/(0,5): OK=84 STALE=0 MIX_R27=0 MIX_R26=0 OTHER=0 TOO_LATE=0
+# [LOGO] frame41 scroll=4 (R#26,R#27)=(1,4)/(0,4): OK=84 STALE=0 MIX_R27=0 MIX_R26=0 OTHER=0 TOO_LATE=0
+# [LOGO] frame42 scroll=3 (R#26,R#27)=(1,5)/(0,3): OK=84 STALE=0 MIX_R27=0 MIX_R26=0 OTHER=0 TOO_LATE=0
+# [LOGO] SUMMARY: OK=252 STALE=0 MIX_R27=0 MIX_R26=0 OTHER=0 TOO_LATE=0 DOUBLE_LATCH=0
+# [LOGO] min margin (R#27 write -> latch) = -89002 dots, max collision -> R#27 write = 77 T
+# [LOGO] write position (X on collision line + 1): R#26 = -60 .. -14, R#27 = -39 .. 7, MIDLINE = 0
+# ** Note: $finish    : C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/test_top_SCREEN6_LOGO/tb.sv(697)
+#    Time: 78296880 ns  Iteration: 1  Instance: /tb
+# End time: 20:05:20 on Nov 11,2026, Elapsed time: 0:03:28
+# Errors: 0, Warnings: 9
