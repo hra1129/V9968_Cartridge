@@ -218,6 +218,15 @@ module vdp_command (
 	wire				w_cache_vram_rdata_en;
 	wire				w_cache_flush_end;
 	wire				w_command_flush_end;
+	reg			[1:0]	ff_nx_cpu_written;		//	[0]: R#40, [1]: R#41 written after ff_start
+	reg			[1:0]	ff_ny_cpu_written;		//	[0]: R#42, [1]: R#43 written after ff_start
+	wire		[10:0]	w_nx_write_back;
+	wire		[10:0]	w_ny_write_back;
+	wire		[10:0]	w_nx_end_value;
+	wire		[10:0]	w_ny_end_value;
+	wire		[10:0]	w_nx_line;
+	wire		[10:0]	w_ny_line;
+	wire				w_geo_r46_write;
 	wire				w_effective_mode;
 	wire		[1:0]	w_bpp;					//	c_bpp_Xbit
 	wire				w_512pixel;
@@ -321,7 +330,7 @@ module vdp_command (
 	assign w_geo_hmmv_start		= register_write && register_num == 6'd46 &&
 								  register_fill_span && register_data == { c_line, c_imp } &&
 								  w_geo_screen8 && !reg_dx[8] && !ff_fg4 &&
-								  !ff_maj && !ff_dix && !ff_diy && reg_ny == 11'd0;
+								  !ff_maj && !ff_dix && !ff_diy && w_ny_line == 11'd0;
 	assign w_geo_hmmv_fallback	= ff_geo_hmmv && !w_geo_screen8 &&
 								  ff_state == c_state_hmmv && !ff_cache_vram_valid;
 
@@ -745,6 +754,38 @@ module vdp_command (
 	// --------------------------------------------------------------------
 	//	Count N registers
 	// --------------------------------------------------------------------
+	//	The end-of-command write-back of NX/NY must not overwrite a byte that
+	//	the CPU has written for the next command while this one is finishing.
+	always @( posedge clk ) begin
+		if( !reset_n ) begin
+			ff_nx_cpu_written <= 2'b00;
+			ff_ny_cpu_written <= 2'b00;
+		end
+		else if( register_write && register_num[5:2] == 4'b1010 ) begin
+			if( register_num[1] ) begin
+				ff_ny_cpu_written[ register_num[0] ] <= 1'b1;
+			end
+			else begin
+				ff_nx_cpu_written[ register_num[0] ] <= 1'b1;
+			end
+		end
+		else if( ff_start ) begin
+			ff_nx_cpu_written <= 2'b00;
+			ff_ny_cpu_written <= 2'b00;
+		end
+	end
+
+	assign w_nx_write_back	= { 2'd0, w_reg_nx[8:0] };
+	assign w_ny_write_back	= ff_geo_hmmv ? 11'd0 : ff_ny;
+	assign w_nx_end_value	= { ff_nx_cpu_written[1] ? reg_nx[10:8] : w_nx_write_back[10:8],
+								ff_nx_cpu_written[0] ? reg_nx[7:0]  : w_nx_write_back[7:0] };
+	assign w_ny_end_value	= { ff_ny_cpu_written[1] ? reg_ny[10:8] : w_ny_write_back[10:8],
+								ff_ny_cpu_written[0] ? reg_ny[7:0]  : w_ny_write_back[7:0] };
+	// NX/NY as the original LINE leaves them; a Geo3D HMMV interrupted by R#46 restores them too.
+	assign w_nx_line		= ff_geo_hmmv ? w_nx_end_value : reg_nx;
+	assign w_ny_line		= ff_geo_hmmv ? w_ny_end_value : reg_ny;
+	assign w_geo_r46_write	= register_write && register_num == 6'd46 && (ff_geo_hmmv || w_geo_hmmv_start);
+
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			reg_nx	<= 11'd0;
@@ -755,13 +796,16 @@ module vdp_command (
 		else if( register_write && register_num == 6'd41 ) begin
 			reg_nx[10:8]	<= register_data[2:0];
 		end
-		else if( w_geo_hmmv_start ) begin
+		else if( w_geo_r46_write ) begin
 			// LINE includes its endpoint; HMMV counts pixels.
-			reg_nx <= reg_nx + 11'd1;
+			reg_nx <= w_geo_hmmv_start ? (w_nx_line + 11'd1) : w_nx_line;
 		end
-		else if( w_geo_hmmv_fallback || (ff_geo_hmmv && w_command_flush_end) ) begin
+		else if( w_geo_hmmv_fallback ) begin
 			// LINE masks NX to nine bits when it starts.
-			reg_nx <= { 2'd0, w_reg_nx[8:0] };
+			reg_nx <= w_nx_write_back;
+		end
+		else if( ff_geo_hmmv && w_command_flush_end ) begin
+			reg_nx <= w_nx_line;
 		end
 		else if( ff_start ) begin
 			if( ff_command == c_lrmm ) begin
@@ -839,8 +883,8 @@ module vdp_command (
 				reg_ny[10:8]	<= { 1'b0, register_data[1:0] };
 			end
 		end
-		else if( w_geo_hmmv_start ) begin
-			reg_ny <= 11'd1;
+		else if( w_geo_r46_write ) begin
+			reg_ny <= w_geo_hmmv_start ? 11'd1 : w_ny_line;
 		end
 		else if( w_geo_hmmv_fallback ) begin
 			reg_ny <= 11'd0;
@@ -854,7 +898,7 @@ module vdp_command (
 			end
 		end
 		else if( w_command_flush_end ) begin
-			reg_ny <= ff_geo_hmmv ? 11'd0 : ff_ny;
+			reg_ny <= w_ny_end_value;
 		end
 	end
 

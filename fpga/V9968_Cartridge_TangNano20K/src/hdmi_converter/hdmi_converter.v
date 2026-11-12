@@ -76,6 +76,15 @@ module hdmi_converter (
 	reg resync_req;
 	reg resync_meta42;
 	reg resync42;
+	// Single clk42m capture of video_vs (clk85m domain), shared by the VS edge detectors.
+	reg vs42;
+
+	always @( posedge clk42m ) begin
+		if( !reset42[1] )
+			vs42 <= 1'b1;
+		else
+			vs42 <= video_vs;
+	end
 
 	// --------------------------------------------------------------------
 	//	clk42m: input frame length measurement (hard reset only)
@@ -87,7 +96,7 @@ module hdmi_converter (
 	reg [9:0] frame_lines42;
 	reg frame_t42;
 	wire meas_wrap = meas_h == H_IN_TOTAL - 11'd1;
-	wire meas_edge = meas_old_vs && !video_vs;
+	wire meas_edge = meas_old_vs && !vs42;
 	// The input period is an exact multiple of H_IN_TOTAL, so the wrap count between
 	// VS edges is the line count regardless of the free-running counter's phase.
 	wire [9:0] meas_now = (meas_wrap && meas_lines != 10'h3FF) ? meas_lines + 10'd1 : meas_lines;
@@ -103,7 +112,7 @@ module hdmi_converter (
 			frame_t42 <= 1'b0;
 		end
 		else begin
-			meas_old_vs <= video_vs;
+			meas_old_vs <= vs42;
 			meas_h <= meas_wrap ? 11'd0 : meas_h + 11'd1;
 			if( meas_edge ) begin
 				meas_lines <= 10'd0;
@@ -177,8 +186,8 @@ module hdmi_converter (
 			read_gray_meta <= read_gray;
 			read_gray_sync <= read_gray_meta;
 			old_de <= video_de;
-			old_vs <= video_vs;
-			if( old_vs && !video_vs ) begin
+			old_vs <= vs42;
+			if( old_vs && !vs42 ) begin
 				// Start only at a frame whose predecessor had a usable length.
 				if( meas_valid )
 					armed <= 1'b1;

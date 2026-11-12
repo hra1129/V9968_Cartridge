@@ -249,6 +249,66 @@ module tb_flushend;
 		end
 	endtask
 
+	task automatic test_parameter_race(input integer kind, input bit previous_geo, input bit with_stop);
+		integer timeout;
+		reg [7:0] command;
+		begin
+			reset_case();
+			configure(8'd0, 8'd2, 8'd60, 8'd0, 8'h35);
+			register_fill_span = previous_geo;
+			write_reg(6'd46, 8'h70);
+			register_fill_span = 1'b0;
+			wait_flush();
+			if (with_stop) write_reg(6'd46, 8'h00);
+
+			// The next parameters arrive before the previous command's final flush ends.
+			configure(8'd16, 8'd8, kind == 0 ? 8'd4 : 8'd5, kind == 0 ? 8'd0 : 8'd4, 8'hC7);
+			if (!command_execute) $fatal(1, "Parameters missed the previous flush window");
+			timeout = 0;
+			while (command_execute && timeout < 10000) begin
+				@(negedge clk);
+				timeout = timeout + 1;
+			end
+			if (command_execute) $fatal(1, "Previous command did not finish");
+			if (u_command.reg_nx !== (kind == 0 ? 11'd4 : 11'd5) ||
+				u_command.reg_ny !== (kind == 0 ? 11'd0 : 11'd4))
+				$fatal(1, "End-of-command write-back overwrote NX/NY written by the CPU");
+
+			command = kind == 0 ? 8'h70 : 8'hC0;
+			write_reg(6'd46, command);
+			wait_end();
+			if (interrupts != 2) $fatal(1, "Wrong command-end interrupt count: %0d", interrupts);
+			check_rectangle(0, 2, 61, 1, 8'h35);
+			check_rectangle(16, 8, 5, kind == 0 ? 1 : 4, 8'hC7);
+			check_rectangle(16, kind == 0 ? 9 : 12, 5, 1, 8'h00);
+			$display("Parameter race kind=%0d previous_geo=%b stop=%b passed", kind, previous_geo, with_stop);
+		end
+	endtask
+
+	task automatic test_geo_interrupt(input bit reissue);
+		begin
+			reset_case();
+			configure(8'd0, 8'd2, 8'd60, 8'd0, 8'h35);
+			register_fill_span = 1'b1;
+			write_reg(6'd46, 8'h70);
+			wait_flush();
+			register_fill_span = reissue;
+			write_reg(6'd46, reissue ? 8'h70 : 8'h00);
+			register_fill_span = 1'b0;
+			if (u_command.ff_geo_hmmv !== reissue) $fatal(1, "Wrong Geo3D state after the interrupting R#46");
+			if (reissue) wait_end();
+			else begin
+				repeat (2) @(negedge clk);
+				while (command_execute) @(negedge clk);
+			end
+			check_rectangle(0, 2, 61, 1, 8'h35);
+			// STOP itself writes NY back at its end, so only the LINE NX is checked for it.
+			if (u_command.reg_nx !== 11'd60 || (reissue && u_command.reg_ny !== 11'd0) || u_command.ff_geo_hmmv)
+				$fatal(1, "Interrupted Geo3D HMMV did not restore LINE NX/NY");
+			$display("Geo3D interrupt reissue=%b passed", reissue);
+		end
+	endtask
+
 	task automatic test_cpu_idle_flush;
 		integer timeout;
 		begin
@@ -282,6 +342,14 @@ module tb_flushend;
 		end
 		test_restart(1, 1'b0, 1'b1);
 		test_restart(1, 1'b1, 1'b1);
+		for (kind = 0; kind < 2; kind = kind + 1) begin
+			test_parameter_race(kind, 1'b0, 1'b0);
+			test_parameter_race(kind, 1'b1, 1'b0);
+			test_parameter_race(kind, 1'b0, 1'b1);
+			test_parameter_race(kind, 1'b1, 1'b1);
+		end
+		test_geo_interrupt(1'b0);
+		test_geo_interrupt(1'b1);
 		slot_period = 32;
 		read_latency = 3;
 		test_restart(2, 1'b0, 1'b0);
