@@ -154,6 +154,13 @@ module tb ();
 	end
 endmodule
 
+// --------------------------------------------------------------------
+//	R#26/R#27 は実効レジスタにラッチせず、書いた位置から効く。
+//	  * BG の VRAM 読み出しタイミングは R#27 によらず固定 (R#27=0 と同じ)
+//	  * R#26 は次の読み出しから効く
+//	  * R#27 は背景色の出力を 0〜7 ドット遅らせる (左端の押し出し部分は周辺色)
+//	SCREEN6 (G5, 512 ドット) で半ドット単位の出力を比較する。
+// --------------------------------------------------------------------
 module tb_scroll_group_alignment ();
 	reg clk;
 	reg reset_n;
@@ -166,13 +173,33 @@ module tb_scroll_group_alignment ();
 	wire [7:0] pixel_pos_y;
 	wire screen_v_active;
 	wire [2:0] horizontal_offset_l;
+	wire [8:3] horizontal_offset_h;
 	wire [1:0] pixel_phase_x;
 	wire [17:0] vram_address;
 	wire vram_valid;
+	wire [31:0] vram_rdata;
+	wire [7:0] display_color;
+	wire display_color_en;
+	reg [8:3] r26_d1, r26_d2;
 	wire [8:0] expected_coarse_pixel_x;
-	integer baseline_requests;
-	integer mismatch_requests;
-	integer first_mismatch_x;
+
+	localparam integer c_lines = 5;			//	A: R#27=0, B: R#27=3, C: R#27 0->3 mid line, D: R#26 0->2 mid line, E: R#27=7
+	localparam integer c_cap = 540;
+	reg [1:0] cap [0:c_lines-1][0:c_cap-1];
+	reg cap_en [0:c_lines-1][0:c_cap-1];
+	integer cap_sel;
+	integer first_req_x [0:c_lines-1];
+	integer n_req;
+	integer n_err;
+	integer i;
+
+	function automatic [7:0] vram_byte(input [4:0] group, input [1:0] lane);
+		vram_byte = ({ 3'd0, group } * 8'd37 + { 6'd0, lane } * 8'd101) ^ 8'h5A;
+	endfunction
+
+	//	VRAM data depends only on the X group, so every line has the same picture.
+	assign vram_rdata = { vram_byte(vram_address[6:2], 2'd3), vram_byte(vram_address[6:2], 2'd2),
+						  vram_byte(vram_address[6:2], 2'd1), vram_byte(vram_address[6:2], 2'd0) };
 
 	vdp_timing_control_ssg u_ssg (
 		.reset_n(reset_n),
@@ -204,7 +231,7 @@ module tb_scroll_group_alignment ();
 		.reg_blink_period(8'd0),
 		.reg_interrupt_line_nonR23_mode(1'b0),
 		.horizontal_offset_l(horizontal_offset_l),
-		.horizontal_offset_h(),
+		.horizontal_offset_h(horizontal_offset_h),
 		.interleaving_page(),
 		.blink(),
 		.status_field(),
@@ -223,10 +250,10 @@ module tb_scroll_group_alignment ();
 		.screen_v_active(1'b1),
 		.vram_address(vram_address),
 		.vram_valid(vram_valid),
-		.vram_rdata(32'hFFFFFFFF),
+		.vram_rdata(vram_rdata),
 		.vram_interleave(),
-		.display_color(),
-		.display_color_en(),
+		.display_color(display_color),
+		.display_color_en(display_color_en),
 		.sprite_off(),
 		.interleaving_page(1'b1),
 		.blink(1'b0),
@@ -241,106 +268,169 @@ module tb_scroll_group_alignment ();
 		.reg_text_back_color(8'd0),
 		.reg_backdrop_color(8'h55),
 		.reg_scroll_planes(1'b0),
-		.reg_left_mask(1'b1),
+		.reg_left_mask(1'b0),
 		.reg_sprite_mode3(1'b0),
 		.reg_flat_interlace_mode(1'b0)
 	);
 
-	assign expected_coarse_pixel_x = screen_pos_x_clone[12:4] + { u_ssg.ff_horizontal_offset_h, 3'd0 } - horizontal_offset_l;
-
 	always #5 clk = ~clk;
 
-	initial begin
-		clk = 1'b0;
-		reset_n = 1'b0;
-		reg_horizontal_offset_l = 3'd0;
-		reg_horizontal_offset_h = 6'd0;
-		baseline_requests = 0;
-		mismatch_requests = 0;
-		first_mismatch_x = -1;
-		repeat (3) @(posedge clk);
-		#1;
-		reset_n = 1'b1;
-		wait (screen_pos_x == 14'd100);
-		#1;
-		reg_horizontal_offset_h = 6'd2;
-		wait (screen_pos_x == 14'd140);
-		#1;
-		if (u_ssg.ff_horizontal_offset_h !== 6'd0 || u_bg.w_pos_x[2:0] !== 3'd0) begin
-			$fatal(1, "R#26 changed during the active display line");
-		end
-		reg_horizontal_offset_l = 3'd3;
-		wait (screen_pos_x == 14'd512);
-		#1;
-		if (baseline_requests < 2 || mismatch_requests != 0 || first_mismatch_x != -1 || horizontal_offset_l !== 3'd0 ||
-			u_ssg.ff_horizontal_offset_h !== 6'd0) begin
-			$fatal(1, "BG groups changed before the line boundary: baseline=%0d mismatches=%0d first=%0d",
-				baseline_requests, mismatch_requests, first_mismatch_x);
-		end
-		wait (horizontal_offset_l == 3'd3);
-		#1;
-		if (u_ssg.ff_horizontal_offset_h !== 6'd2 || screen_pos_x_clone !== 14'h10AF) begin
-			$fatal(1, "R#26/R#27 were not latched together at X=266/F: X=%0h", screen_pos_x_clone);
-		end
-		wait (u_ssg.ff_horizontal_offset_h == 6'd2);
-		#1;
-		if (horizontal_offset_l !== 3'd3 || 		screen_pos_x_clone !== 14'h10AF) begin
-					$fatal(1, "R#26 was not latched with R#27: X=%0h", screen_pos_x_clone);
-		end
-		wait (screen_pos_x_clone == 14'd100);
-		#1;
-		reg_horizontal_offset_l = 3'd0;
-		reg_horizontal_offset_h = 6'd4;
-		wait (screen_pos_x_clone == 14'd512);
-		#1;
-		if (horizontal_offset_l !== 3'd3 || u_ssg.ff_horizontal_offset_h !== 6'd2) begin
-			$fatal(1, "R#26/R#27 changed during the active display line");
-		end
-		wait (horizontal_offset_l == 3'd0);
-		#1;
-		if (u_ssg.ff_horizontal_offset_h !== 6'd4 || screen_pos_x_clone !== 14'h10AF) begin
-			$fatal(1, "R#27 decrease latch mismatch: low=%0d high=%0d X=%0h",
-				horizontal_offset_l, u_ssg.ff_horizontal_offset_h, screen_pos_x_clone);
-		end
-		wait (u_ssg.ff_horizontal_offset_h == 6'd4);
-		#1;
-		if (horizontal_offset_l !== 3'd0 || screen_pos_x_clone !== 14'h10AF) begin
-			$fatal(1, "R#26 decrease latch mismatch: low=%0d high=%0d X=%0h",
-				horizontal_offset_l, u_ssg.ff_horizontal_offset_h, screen_pos_x_clone);
-		end
-		$display("R#26/R#27 latch together at X=267 for both scroll directions");
-		$finish;
+	always @(posedge clk) begin
+		r26_d1 <= horizontal_offset_h;
+		r26_d2 <= r26_d1;
 	end
 
+	assign expected_coarse_pixel_x = screen_pos_x_clone[12:4] + { r26_d2, 3'd0 };
+
+	task automatic wait_x(input integer x, input [3:0] sub);
+		reg [13:0] pos;
+		begin
+			pos = { x[9:0], sub };
+			@(posedge clk);
+			while (screen_pos_x_clone !== pos) @(posedge clk);
+			#1;
+		end
+	endtask
+
+	task automatic check(input integer sel, input integer idx, input [1:0] expected, input [8*24-1:0] what);
+		begin
+			if (cap[sel][idx] !== expected) begin
+				if (n_err < 20) begin
+					$display("%0s: line%0d idx=%0d (dot %0d) got=%0d expected=%0d",
+						what, sel, idx, (idx - 1) / 2, cap[sel][idx], expected);
+				end
+				n_err = n_err + 1;
+			end
+		end
+	endtask
+
+	//	Fetch timing must not depend on R#27, and the address must follow R#26 immediately.
 	always @(posedge clk) begin
-		if (reset_n && vram_valid && screen_pos_x_clone < 14'd512) begin
+		if (reset_n && vram_valid && !screen_pos_x_clone[13] && screen_pos_x_clone[13:4] < 10'd256) begin
 			if (u_bg.ff_phase !== 3'd0 || screen_pos_x_clone[3:0] !== 4'd1) begin
 				$fatal(1, "VRAM request phase mismatch: X=%0d phase=%0d sub_phase=%0d",
 					screen_pos_x_clone[13:4], u_bg.ff_phase, screen_pos_x_clone[3:0]);
 			end
 			if (vram_address[6:2] !== expected_coarse_pixel_x[7:3]) begin
 				$fatal(1, "R#26 VRAM group mismatch: X=%0d R26=%0d expected=%0d address=%0d",
-					screen_pos_x_clone[13:4], u_ssg.ff_horizontal_offset_h,
-					expected_coarse_pixel_x[7:3], vram_address[6:2]);
+					screen_pos_x_clone[13:4], r26_d2, expected_coarse_pixel_x[7:3], vram_address[6:2]);
 			end
-			if (horizontal_offset_l == 3'd0 && u_bg.w_pos_x[2:0] == 3'd0) begin
-				baseline_requests = baseline_requests + 1;
+			if (cap_sel >= 0 && cap_sel < c_lines && first_req_x[cap_sel] < 0) begin
+				first_req_x[cap_sel] = screen_pos_x_clone[13:4];
 			end
-			else if (u_bg.w_pos_x[2:0] != 3'd0) begin
-				mismatch_requests = mismatch_requests + 1;
-				if (first_mismatch_x == -1) first_mismatch_x = screen_pos_x_clone;
-				$display("BG group mismatch X=%0d phase=%0d reference_low=%0d VRAM=%05x",
-					screen_pos_x_clone[13:4], u_bg.ff_phase, u_bg.w_pos_x[2:0], vram_address);
+			n_req = n_req + 1;
+		end
+	end
+
+	//	G5 output: first half is written at sub phase 7, second half at sub phase 15.
+	always @(posedge clk) begin
+		if (cap_sel >= 0 && cap_sel < c_lines && !screen_pos_x_clone[13] && screen_pos_x_clone[13:4] < 10'd270) begin
+			if (screen_pos_x_clone[3:0] == 4'd3) begin
+				cap[cap_sel][2 * screen_pos_x_clone[13:4]] = display_color[1:0];
+				cap_en[cap_sel][2 * screen_pos_x_clone[13:4]] = display_color_en;
+			end
+			else if (screen_pos_x_clone[3:0] == 4'd11) begin
+				cap[cap_sel][2 * screen_pos_x_clone[13:4] + 1] = display_color[1:0];
+				cap_en[cap_sel][2 * screen_pos_x_clone[13:4] + 1] = display_color_en;
 			end
 		end
 	end
 
 	initial begin
-		$dumpfile("scroll_group.vcd");
-		$dumpvars(0, tb_scroll_group_alignment);
+		clk = 1'b0;
+		reset_n = 1'b0;
+		reg_horizontal_offset_l = 3'd0;
+		reg_horizontal_offset_h = 6'd0;
+		cap_sel = -1;
+		n_req = 0;
+		n_err = 0;
+		for (i = 0; i < c_lines; i = i + 1) first_req_x[i] = -1;
+		repeat (3) @(posedge clk);
+		#1;
+		reset_n = 1'b1;
+		wait_x(-32, 0);
+		wait_x(-32, 0);
+
+		//	A: reference (R#26=0, R#27=0)
+		cap_sel = 0;
+		//	B: R#27=3 written in H blanking
+		wait_x(-32, 0);
+		reg_horizontal_offset_l = 3'd3;
+		cap_sel = 1;
+		//	C: R#27 0 -> 3 in the middle of the line
+		wait_x(-32, 0);
+		reg_horizontal_offset_l = 3'd0;
+		cap_sel = 2;
+		wait_x(128, 0);
+		reg_horizontal_offset_l = 3'd3;
+		//	D: R#26 0 -> 2 in the middle of the line
+		wait_x(-32, 0);
+		reg_horizontal_offset_l = 3'd0;
+		cap_sel = 3;
+		wait_x(100, 4);
+		reg_horizontal_offset_h = 6'd2;
+		//	E: R#27=7 (largest delay) written in H blanking
+		wait_x(-32, 0);
+		reg_horizontal_offset_h = 6'd0;
+		reg_horizontal_offset_l = 3'd7;
+		cap_sel = 4;
+		wait_x(-32, 0);
+		cap_sel = -1;
+
+		if (n_req < 4 * 32) $fatal(1, "Too few VRAM requests: %0d", n_req);
+		if (first_req_x[0] !== first_req_x[1]) begin
+			$fatal(1, "BG fetch timing depends on R#27: first request X=%0d (R#27=0) / %0d (R#27=3)",
+				first_req_x[0], first_req_x[1]);
+		end
+
+		//	The background starts at dot 5 (G5). Dot d occupies idx 2d+1 and 2d+2.
+		//	B: dots 5..7 are pushed out by R#27=3 and show the backdrop color (0x55 -> 1).
+		for (i = 11; i <= 16; i = i + 1) check(1, i, 2'd1, "R27 left mask");
+		for (i = 17; i <= 523; i = i + 1) check(1, i, cap[0][i - 6], "R27 delay");
+		//	Right end: the last BG half-dot is idx 523 for R#27=0, and it must not move with R#27.
+		//	Without the right-end mask, R#27=k leaked delayed data into idx 524..523+2k
+		//	(R#27=3: 524..529), so idx 524 is the first half-dot that must be backdrop.
+		for (i = 524; i < c_cap; i = i + 1) check(0, i, 2'd1, "right border (R27=0)");
+		for (i = 524; i < c_cap; i = i + 1) check(1, i, 2'd1, "right border (R27=3)");
+		for (i = 524; i < c_cap; i = i + 1) check(2, i, 2'd1, "right border (R27 mid)");
+		//	E: R#27=7 pushes out dots 5..11 (idx 11..24), leaks would reach idx 537 without the mask.
+		for (i = 11; i <= 24; i = i + 1) check(4, i, 2'd1, "R27=7 left mask");
+		for (i = 25; i <= 523; i = i + 1) check(4, i, cap[0][i - 14], "R27=7 delay");
+		for (i = 524; i < c_cap; i = i + 1) check(4, i, 2'd1, "right border (R27=7)");
+		//	display_color_en (sprites are gated by it): cleared only in the part pushed out by R#27.
+		for (i = 0; i < c_cap; i = i + 1) begin
+			if (cap_en[0][i] !== 1'b1) begin
+				if (n_err < 20) $display("en (R27=0): idx=%0d got=%0d expected=1", i, cap_en[0][i]);
+				n_err = n_err + 1;
+			end
+			if (i >= 11 && cap_en[1][i] !== (i >= 17)) begin
+				if (n_err < 20) $display("en (R27=3): idx=%0d got=%0d expected=%0d", i, cap_en[1][i], i >= 17);
+				n_err = n_err + 1;
+			end
+			if (i >= 11 && cap_en[4][i] !== (i >= 25)) begin
+				if (n_err < 20) $display("en (R27=7): idx=%0d got=%0d expected=%0d", i, cap_en[4][i], i >= 25);
+				n_err = n_err + 1;
+			end
+		end
+		//	C: same as A before the write, delayed by 3 dots after the write.
+		for (i = 11; i < 2 * 120; i = i + 1) check(2, i, cap[0][i], "R27 before write");
+		for (i = 2 * 132; i <= 500; i = i + 1) check(2, i, cap[0][i - 6], "R27 after write");
+		//	D: same as A before the write, 16 dots further after the next fetch.
+		for (i = 11; i < 2 * 100; i = i + 1) check(3, i, cap[0][i], "R26 before write");
+		for (i = 2 * 124; i <= 2 * 220; i = i + 1) check(3, i, cap[0][i + 32], "R26 after write");
+
+		if (n_err != 0) $fatal(1, "%0d output mismatches", n_err);
+		n_err = 0;
+		for (i = 17; i <= 500; i = i + 1) if (cap[0][i] !== cap[0][i - 6]) n_err = n_err + 1;
+		if (n_err < 100) $fatal(1, "Reference line is too uniform to detect shifts (%0d differences)", n_err);
+		$display("PASS: fixed BG fetch, R#26 from next fetch, R#27 as output delay (first fetch X=%0d)", first_req_x[0]);
+		$finish;
 	end
 endmodule
 
+// --------------------------------------------------------------------
+//	SSG passes R#26/R#27 through without latching (pixel_pos_y latch is kept for sprites).
+// --------------------------------------------------------------------
 module tb_scroll_midline ();
 	reg clk;
 	reg reset_n;
@@ -391,20 +481,6 @@ module tb_scroll_midline ();
 
 	always #5 clk = ~clk;
 
-	task automatic expect_offsets;
-		input [13:0] position;
-		input [2:0] expected_low;
-		input [8:3] expected_high;
-		begin
-			wait (screen_pos_x == position);
-			#1;
-			if (horizontal_offset_l !== expected_low || horizontal_offset_h !== expected_high) begin
-				$fatal(1, "X=%0d: BG offset=%0d,%0d", position[13:4],
-					horizontal_offset_h, horizontal_offset_l);
-			end
-		end
-	endtask
-
 	initial begin
 		clk = 1'b0;
 		reset_n = 1'b0;
@@ -415,30 +491,23 @@ module tb_scroll_midline ();
 		reset_n = 1'b1;
 		wait (screen_pos_x == 14'd100);
 		#1;
+		if (pixel_pos_x !== 9'd6) $fatal(1, "pixel_pos_x=%0d before R#26 write", pixel_pos_x);
 		reg_horizontal_offset_l = 3'd3;
 		reg_horizontal_offset_h = 6'd2;
-		expect_offsets(14'd126, 3'd0, 6'd0);
-		expect_offsets(14'd127, 3'd0, 6'd0);
-		wait (screen_pos_x == 14'd140);
+		#0;
+		if (horizontal_offset_l !== 3'd3 || horizontal_offset_h !== 6'd2) begin
+			$fatal(1, "R#26/R#27 are not passed through: %0d,%0d", horizontal_offset_h, horizontal_offset_l);
+		end
+		repeat (2) @(posedge clk);
 		#1;
-		reg_horizontal_offset_l = 3'd5;
-		expect_offsets(14'd254, 3'd0, 6'd0);
-		expect_offsets(14'd255, 3'd0, 6'd0);
+		if (pixel_pos_x !== 9'd22) $fatal(1, "R#26 did not take effect immediately: pixel_pos_x=%0d", pixel_pos_x);
 		wait (screen_pos_x == 14'd265);
 		#1;
 		reg_horizontal_offset_h = 6'd4;
-		expect_offsets(14'd382, 3'd0, 6'd0);
-		expect_offsets(14'd383, 3'd0, 6'd0);
 		wait (screen_pos_x == 14'd384);
 		#1;
-		if (pixel_pos_x !== 9'd24) $fatal(1, "R#26 changed before the next active display line");
-		wait (horizontal_offset_l == 3'd5);
-		wait (screen_pos_x == 14'd79);
-		#1;
-		if (horizontal_offset_h !== 6'd4 || horizontal_offset_l !== 3'd5) begin
-			$fatal(1, "R#26/R#27 were not latched together before active video");
-		end
-		$display("R#26 and R#27 latch together before active video");
+		if (pixel_pos_x !== 9'd56) $fatal(1, "R#26 did not take effect immediately: pixel_pos_x=%0d", pixel_pos_x);
+		$display("PASS: R#26/R#27 take effect from the write position");
 		$finish;
 	end
 endmodule

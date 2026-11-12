@@ -254,7 +254,6 @@ module vdp_timing_control (
 		.display_color								( sprite_display_color						),
 		.display_color_transparent					( sprite_display_color_transparent			),
 		.display_color_en							( sprite_display_color_en					),
-		.horizontal_offset_l						( w_horizontal_offset_l						),
 		.clear_sprite_collision						( clear_sprite_collision					),
 		.sprite_collision							( sprite_collision							),
 		.clear_sprite_collision_xy					( clear_sprite_collision_xy					),

@@ -161,6 +161,11 @@ module vdp_color_palette (
 	reg			[7:0]	ff_display_color_sprite;
 	reg			[1:0]	ff_display_color_sprite_transparent;
 	reg					ff_display_color_sprite_en;
+	reg					ff_display_color_delay0_en;
+	reg			[8:0]	ff_display_color_hires;
+	reg					ff_display_color_hires_en;
+	wire		[8:0]	w_bg_color;
+	wire				w_bg_color_en;
 
 	// --------------------------------------------------------------------
 	//	Palette initializer
@@ -269,6 +274,26 @@ module vdp_color_palette (
 		end
 	end
 
+	//	ff_display_color_delay0 と同じタイミングで取り込む映像期間フラグ。
+	//	画素ごとに混ぜる BG 画素の表示有効フラグで、スプライトのマスク (MSK / R#27 左端) に使う。
+	always @( posedge clk ) begin
+		if( screen_pos_x[2:0] == 3'd0 ) begin
+			ff_display_color_delay0_en <= display_color_screen_mode_en;
+		end
+	end
+
+	//	512ドットモードは左半分の画素を sub-phase 15、右半分を次の sub-phase 7 で受け取るため、
+	//	そのままでは通常モードより半画素早く出力される。半画素 1 段遅らせて通常モードと揃える。
+	always @( posedge clk ) begin
+		if( screen_pos_x[2:0] == 3'd0 ) begin
+			ff_display_color_hires		<= ff_display_color_delay0;
+			ff_display_color_hires_en	<= ff_display_color_delay0_en;
+		end
+	end
+
+	assign w_bg_color		= w_high_resolution ? ff_display_color_hires   : ff_display_color_delay0;
+	assign w_bg_color_en	= w_high_resolution ? ff_display_color_hires_en: ff_display_color_delay0_en;
+
 	always @( posedge clk ) begin
 		//	画素単位でシフトする
 		if( screen_pos_x[3:0] == 4'd0 ) begin
@@ -286,7 +311,7 @@ module vdp_color_palette (
 		if( screen_pos_x[3:0] == 4'd0 ) begin
 			ff_display_color_sprite					<= display_color_sprite;
 			ff_display_color_sprite_transparent		<= display_color_sprite_transparent;
-			ff_display_color_sprite_en				<= display_color_sprite_en & display_color_screen_mode_en;
+			ff_display_color_sprite_en				<= display_color_sprite_en & w_bg_color_en;
 		end
 		else begin
 			//	hold
@@ -362,7 +387,7 @@ module vdp_color_palette (
 	//	Palette RAM Read Signal ( screen_pos_x = 0 )
 	// --------------------------------------------------------------------
 	//	YJK モードでは ff_y / ff_yjk_en と同じ画素 (delay4) を使う
-	assign w_display_color		= reg_yjk_mode ? ff_display_color_delay4: ff_display_color_delay0;
+	assign w_display_color		= reg_yjk_mode ? ff_display_color_delay4: w_bg_color;
 
 	always @( posedge clk ) begin
 		if( !reset_n ) begin

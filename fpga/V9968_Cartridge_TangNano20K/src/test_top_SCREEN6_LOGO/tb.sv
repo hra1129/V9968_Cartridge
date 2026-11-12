@@ -191,18 +191,18 @@ module tb ();
 	wire	[13:0]	m_sx		= `SSG.ff_screen_pos_x;
 	wire	[ 9:0]	m_sy		= `SSG.ff_screen_pos_y;
 	wire	[13:0]	m_wx		= `SSG.w_screen_pos_x;
-	wire	[ 2:0]	m_eff_l		= `SSG.ff_horizontal_offset_l;
-	//	vdp_timing_control_ssg.v の実効値ラッチ条件と同じ (R#26/R#27 を X=266/F で組でラッチ)
-	wire			m_latch_l	= (m_wx == { 10'd266, 4'hF });
+	wire	[ 2:0]	m_eff_l		= `SSG.horizontal_offset_l;
+	//	R#26/R#27 はラッチしない。R#26 が効き始める BG の VRAM 読み出し開始 (X=-1/F) を基準点として記録する
+	wire			m_latch_l	= (m_wx == { 10'h3FF, 4'hF });
 	wire			m_latch_h	= m_latch_l;
 
-	//	表示期間中 (X=0..255) に実効値が変化したら数える
+	//	MSK で隠れない表示期間中 (X=8..255) に R#26/R#27 が変化したら数える
 	integer			n_midline;
 	reg		[ 8:0]	ff_m_eff;
 	always @( posedge clk14m ) begin
-		ff_m_eff <= { `SSG.ff_horizontal_offset_h, `SSG.ff_horizontal_offset_l };
-		if( !m_sx[13] && m_sx[13:4] < 10'd256 && m_sy < 10'd192 &&
-			ff_m_eff != { `SSG.ff_horizontal_offset_h, `SSG.ff_horizontal_offset_l } ) begin
+		ff_m_eff <= { `SSG.horizontal_offset_h, `SSG.horizontal_offset_l };
+		if( !m_sx[13] && m_sx[13:4] >= 10'd8 && m_sx[13:4] < 10'd256 && m_sy < 10'd192 &&
+			ff_m_eff != { `SSG.horizontal_offset_h, `SSG.horizontal_offset_l } ) begin
 			n_midline++;
 			$display( "[LOGO] frame%0d line%0d MIDLINE: effective R#26/R#27 changed at x=%0d", cur_frame, m_sy, dot( m_sx ) );
 		end
@@ -284,7 +284,7 @@ module tb ();
 				pix_n++;
 			end
 			else if( m_sx == { 10'd128, 4'd0 } ) begin
-				pix_sc = scroll_of( `SSG.ff_horizontal_offset_h, `SSG.ff_horizontal_offset_l );
+				pix_sc = scroll_of( `SSG.horizontal_offset_h, `SSG.horizontal_offset_l );
 			end
 			else if( m_sx == { 10'd240, 4'd0 } ) begin
 				if( pix_sc >= 0 ) pix_check( m_sy, pix_sc );
@@ -402,8 +402,8 @@ module tb ();
 
 		if( m_sx == { 10'd128, 4'd0 } ) begin
 			y		= m_sy;
-			eff_h	= `SSG.ff_horizontal_offset_h;
-			eff_l	= `SSG.ff_horizontal_offset_l;
+			eff_h	= `SSG.horizontal_offset_h;
+			eff_l	= `SSG.horizontal_offset_l;
 			if( exp_valid[ y ] ) begin
 				if( eff_h == exp_h[y] && eff_l == exp_l[y] ) begin
 					verdict = "OK";			n_ok++;		f_ok++;

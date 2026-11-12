@@ -75,7 +75,6 @@ module vdp_timing_control_sprite (
 	output		[1:0]	display_color_transparent,
 	output				display_color_en,
 
-	input		[2:0]	horizontal_offset_l,
 	input				clear_sprite_collision,
 	output				sprite_collision,
 	input				clear_sprite_collision_xy,
@@ -159,8 +158,8 @@ module vdp_timing_control_sprite (
 			reg_screen_mode == c_mode_g5 ||
 			reg_screen_mode == c_mode_g6 ||
 			reg_screen_mode == c_mode_g7 );
-	assign w_screen_pos_x[13:4]	= screen_pos_x[13:4] - { 7'd0, horizontal_offset_l };
-	assign w_screen_pos_x[ 3:0]	= screen_pos_x[ 3:0];
+	//	スプライトの VRAM 読み出し枠は、BG と同じく R#27 に関係なく固定
+	assign w_screen_pos_x		= screen_pos_x;
 
 	// --------------------------------------------------------------------
 	//	Active period
