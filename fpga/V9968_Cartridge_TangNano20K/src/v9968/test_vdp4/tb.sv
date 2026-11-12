@@ -42,7 +42,7 @@ module tb ();
 		.reg_color_table_base(12'd0),
 		.reg_pattern_generator_table_base(7'd0),
 		.reg_text_back_color(8'd0),
-		.reg_backdrop_color(8'h55),
+		.reg_backdrop_color(8'h00),
 		.reg_scroll_planes(1'b0),
 		.reg_left_mask(1'b1),
 		.reg_sprite_mode3(1'b0),
@@ -71,7 +71,7 @@ module tb ();
 		.reg_yjk_mode(1'b0),
 		.reg_yae_mode(1'b0),
 		.reg_color0_opaque(1'b1),
-		.reg_backdrop_color(8'h55),
+		.reg_backdrop_color(8'h00),
 		.reg_ext_palette_mode(1'b0),
 		.reg_sprite_mode3(1'b0)
 	);
@@ -114,7 +114,8 @@ module tb ();
 			screen_pos_x = scan_clock;
 			@(posedge clk);
 			#1;
-			if (screen_pos_x == 13 * 16 && u_palette.ff_display_color_sprite_en !== 1'b0) begin
+			if ((screen_pos_x == 13 * 16 || screen_pos_x == 14 * 16) &&
+				u_palette.ff_display_color_sprite_en !== 1'b0) begin
 				$fatal(1, "Sprite enabled inside the left mask");
 			end
 			if (screen_pos_x == 14 * 16 || screen_pos_x == 15 * 16) begin
@@ -123,24 +124,21 @@ module tb ();
 					u_palette.ff_display_color_sprite_en,
 					vdp_r, vdp_g, vdp_b);
 			end
-			if (screen_pos_x == 14 * 16 &&
-				(display_color_screen_mode_en !== 1'b1 ||
-				 u_palette.ff_display_color_sprite_en !== 1'b1)) begin
-				$fatal(1, "Sprite did not become enabled at the first BG-enabled pixel");
-			end
 			if (screen_pos_x == 15 * 16 && u_palette.ff_display_color_sprite_en !== 1'b1) begin
-				$fatal(1, "Sprite did not become enabled after the boundary");
+				$fatal(1, "Sprite did not become enabled at the first output pixel");
 			end
 			if (screen_pos_x == 14 * 16 + 4 || screen_pos_x == 15 * 16 + 4) begin
 				$display("x=%0d phase=%0d sprite_en=%b rgb=%02x,%02x,%02x",
 					screen_pos_x[13:4], screen_pos_x[3:0], u_palette.ff_display_color_sprite_en,
 					vdp_r, vdp_g, vdp_b);
 			end
-			if (screen_pos_x == 14 * 16 + 4 && {vdp_r, vdp_g, vdp_b} !== 24'h0000FF) begin
-				$fatal(1, "First BG-enabled pixel was not covered by the blue sprite");
+			if ((screen_pos_x == 14 * 16 + 4 || screen_pos_x == 14 * 16 + 12) &&
+				{vdp_r, vdp_g, vdp_b} !== 24'h000000) begin
+				$fatal(1, "Sprite was visible inside the left mask");
 			end
-			if (screen_pos_x == 15 * 16 + 4 && {vdp_r, vdp_g, vdp_b} !== 24'h0000FF) begin
-				$fatal(1, "Following pixel did not show the blue sprite");
+			if ((screen_pos_x == 15 * 16 + 4 || screen_pos_x == 15 * 16 + 12) &&
+				{vdp_r, vdp_g, vdp_b} !== 24'h0000FF) begin
+				$fatal(1, "First unmasked pixel was not covered by the blue sprite");
 			end
 		end
 		$display("Left-mask boundary covered by sprite");

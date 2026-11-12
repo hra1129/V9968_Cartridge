@@ -596,18 +596,20 @@ module tb_collision_once_per_line ();
 	reg clk;
 	reg reset_n;
 	reg [13:0] screen_pos_x;
+	reg [9:0] screen_pos_y;
 	reg [3:0] makeup_plane;
 	reg color_plane_x_en;
 	reg pattern_left_en;
 	reg clear_sprite_collision;
 	wire sprite_collision;
+	wire [9:0] sprite_collision_y;
 	integer scan_clock;
 
 	vdp_sprite_makeup_pixel u_dut (
 		.reset_n(reset_n),
 		.clk(clk),
 		.screen_pos_x(screen_pos_x),
-		.pixel_pos_y(8'd40),
+		.screen_pos_y(screen_pos_y),
 		.screen_v_active(1'b1),
 		.sprite_mode2(1'b1),
 		.reg_display_on(1'b1),
@@ -636,7 +638,7 @@ module tb_collision_once_per_line ();
 		.sprite_collision(sprite_collision),
 		.clear_sprite_collision_xy(1'b0),
 		.sprite_collision_x(),
-		.sprite_collision_y()
+		.sprite_collision_y(sprite_collision_y)
 	);
 
 	always #5 clk = ~clk;
@@ -657,6 +659,8 @@ module tb_collision_once_per_line ();
 				#1;
 				if (!collision_seen && sprite_collision) begin
 					collision_seen = 1'b1;
+					if (sprite_collision_y !== screen_pos_y + 10'd8)
+						$fatal(1, "Collision Y expected %0d, got %0d", screen_pos_y + 10'd8, sprite_collision_y);
 					if (clear_on_first_collision) clear_sprite_collision = 1'b1;
 				end
 				else if (clear_sprite_collision) begin
@@ -677,6 +681,7 @@ module tb_collision_once_per_line ();
 		clk = 1'b0;
 		reset_n = 1'b0;
 		screen_pos_x = 14'd0;
+		screen_pos_y = 10'd40;
 		makeup_plane = 4'd0;
 		color_plane_x_en = 1'b0;
 		pattern_left_en = 1'b0;
@@ -695,6 +700,7 @@ module tb_collision_once_per_line ();
 		pattern_left_en = 1'b0;
 		scan_line(1'b1);
 		if (sprite_collision !== 1'b0) $fatal(1, "Collision did not clear");
+		screen_pos_y = 10'd199;
 		scan_line(1'b0);
 		if (sprite_collision !== 1'b1) $fatal(1, "Collision was not detected on the next line");
 		$display("Collision is reported once per line");

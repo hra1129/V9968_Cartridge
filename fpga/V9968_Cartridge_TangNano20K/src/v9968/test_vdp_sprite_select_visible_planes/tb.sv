@@ -146,8 +146,27 @@ module tb ();
 
 	always @( posedge clk ) begin
 		if( vram_valid ) begin
-			// Extract plane number from VRAM address
-			vram_rdata <= sprite_attr_table[vram_address[6:2]];
+			if( vram_interleave ) begin
+				if( vram_address[0] ) begin
+					vram_rdata <= {
+						sprite_attr_table[{vram_address[6:3], 1'b1}][31:24],
+						sprite_attr_table[{vram_address[6:3], 1'b1}][15:8],
+						sprite_attr_table[{vram_address[6:3], 1'b0}][31:24],
+						sprite_attr_table[{vram_address[6:3], 1'b0}][15:8]
+					};
+				end
+				else begin
+					vram_rdata <= {
+						sprite_attr_table[{vram_address[6:3], 1'b1}][23:16],
+						sprite_attr_table[{vram_address[6:3], 1'b1}][7:0],
+						sprite_attr_table[{vram_address[6:3], 1'b0}][23:16],
+						sprite_attr_table[{vram_address[6:3], 1'b0}][7:0]
+					};
+				end
+			end
+			else begin
+				vram_rdata <= sprite_attr_table[vram_address[6:2]];
+			end
 		end
 	end
 
@@ -216,6 +235,10 @@ module tb ();
 						selected_plane_num, selected_attribute[7:0], selected_attribute[15:8], selected_attribute[23:16], selected_attribute[31:24], selected_count);
 					if( selected_plane_num >= 32 || observed_planes[selected_plane_num] ) begin
 						$fatal(1, "Unexpected or duplicate sprite plane %d at Y=%d", selected_plane_num, scan_y);
+					end
+					if( vram_interleave && selected_attribute[31:24] !== sprite_attr_table[selected_plane_num][31:24] ) begin
+						$fatal(1, "Interleaved plane %0d lost attribute+3: expected %02X, got %02X",
+							selected_plane_num, sprite_attr_table[selected_plane_num][31:24], selected_attribute[31:24]);
 					end
 					observed_planes[selected_plane_num] = 1'b1;
 				end
@@ -461,7 +484,7 @@ module tb ();
 			$fatal(1, "R#23 change mixed lines and set overmap (id=%d)", sprite_overmap_id);
 		end
 
-		$display("=== Test 11: non-R#23 mode latches screen Y for collision coordinates ===");
+		$display("=== Test 11: non-R#23 mode latches screen Y for plane selection ===");
 		reg_sprite_nonR23_mode = 1'b1;
 		screen_pos_y = 9'h123;
 		pixel_pos_y = 8'h55;
@@ -472,10 +495,18 @@ module tb ();
 			$fatal(1, "Non-R#23 pixel Y mismatch: expected 123, observed %03X", selected_pixel_pos_y);
 		end
 
-		$display("=== Test completed ===");
-		repeat( 500 ) begin
-			wait_cycles(1368 * 4);
+		$display("=== Test 12: interleaved SpriteMode2 retains attribute+3 ===");
+		reg_sprite_nonR23_mode = 1'b0;
+		reg_sprite_16x16 = 1'b0;
+		vram_interleave = 1'b1;
+		for( i = 0; i < 32; i = i + 1 ) begin
+			sprite_attr_table[i] = 32'h000000D8;
 		end
+		sprite_attr_table[0] = { 8'hA5, 8'h10, 8'd64, 8'd39 };
+		sprite_attr_table[1] = { 8'h3B, 8'h20, 8'd80, 8'd39 };
+		simulate_scanline(8'd40, 32'h00000003);
+
+		$display("=== Test completed ===");
 		$finish;
 	end
 

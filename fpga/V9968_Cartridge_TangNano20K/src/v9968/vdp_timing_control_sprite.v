@@ -120,7 +120,6 @@ module vdp_timing_control_sprite (
 	wire		[5:0]	w_selected_plane_num;
 	wire		[31:0]	w_selected_attribute;
 	wire		[4:0]	w_selected_count;
-	wire		[8:0]	w_selected_pixel_pos_y;
 	wire				w_start_info_collect;
 	wire				w_sprite_mode2;
 	wire		[9:0]	w_plane_x;
@@ -223,7 +222,7 @@ module vdp_timing_control_sprite (
 		.selected_plane_num							( w_selected_plane_num						),
 		.selected_attribute							( w_selected_attribute						),
 		.selected_count								( w_selected_count							),
-		.selected_pixel_pos_y						( w_selected_pixel_pos_y					),
+		.selected_pixel_pos_y						(											),
 		.start_info_collect							( w_start_info_collect						),
 		.clear_sprite_overmap						( clear_sprite_overmap						),
 		.sprite_overmap_enable					( sprite_overmap_enable				),
@@ -289,7 +288,7 @@ module vdp_timing_control_sprite (
 		.reset_n									( reset_n									),
 		.clk										( clk										),
 		.screen_pos_x								( screen_pos_x								),
-		.pixel_pos_y								( w_selected_pixel_pos_y					),
+		.screen_pos_y								( screen_pos_y								),
 		.screen_v_active							( screen_v_active							),
 		.sprite_mode2								( w_sprite_mode2							),
 		.clear_sprite_collision						( clear_sprite_collision					),

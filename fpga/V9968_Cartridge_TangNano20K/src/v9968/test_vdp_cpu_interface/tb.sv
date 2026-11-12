@@ -1085,6 +1085,12 @@ module tb_port1_latch_reset ();
 	wire [4:0] palette_g;
 	wire [4:0] palette_b;
 	wire reg_ext_palette_mode;
+	wire reg_sprite_priority_shuffle;
+	wire reg_scroll_planes;
+	wire reg_left_mask;
+	wire reg_yjk_mode;
+	wire reg_yae_mode;
+	wire reg_command_enable;
 	reg [7:0] last_palette_num;
 	reg [4:0] last_palette_r;
 	reg [4:0] last_palette_g;
@@ -1166,12 +1172,12 @@ module tb_port1_latch_reset ();
 		.reg_display_adjust(),
 		.reg_interrupt_line(),
 		.reg_vertical_offset(),
-		.reg_scroll_planes(),
-		.reg_left_mask(),
-		.reg_yjk_mode(),
-		.reg_yae_mode(),
-		.reg_command_enable(),
-		.reg_sprite_priority_shuffle(),
+		.reg_scroll_planes(reg_scroll_planes),
+		.reg_left_mask(reg_left_mask),
+		.reg_yjk_mode(reg_yjk_mode),
+		.reg_yae_mode(reg_yae_mode),
+		.reg_command_enable(reg_command_enable),
+		.reg_sprite_priority_shuffle(reg_sprite_priority_shuffle),
 		.reg_horizontal_offset_l(),
 		.reg_horizontal_offset_h(),
 		.reg_command_high_speed_mode(),
@@ -1432,6 +1438,30 @@ module tb_port1_latch_reset ();
 		if (palette_write_count !== 0) $fatal(1, "extended palette completed right after R#16 write");
 		access_io(3'd2, 1'b1, 8'h04);
 		expect_palette(8'h41, 5'h02, 5'h03, 5'h04, "extended palette after R#16 write");
+
+		$display("[test013] SPS writes require V58=0 and Lock=0");
+		write_register(6'd25, 8'hDB);
+		if (reg_sprite_priority_shuffle !== 1'b0 ||
+		    {reg_command_enable, reg_yae_mode, reg_yjk_mode, reg_left_mask, reg_scroll_planes} !== 5'b11111)
+			$fatal(1, "V58=1 must block SPS without blocking the standard R#25 bits");
+		write_register(6'd21, 8'h00);
+		write_register(6'd25, 8'h80);
+		if (reg_sprite_priority_shuffle !== 1'b1) $fatal(1, "Unlocked V9968 mode did not set SPS");
+		access_io(3'd4, 1'b1, 8'h80);
+		write_register(6'd25, 8'h5B);
+		if (reg_sprite_priority_shuffle !== 1'b1 ||
+		    {reg_command_enable, reg_yae_mode, reg_yjk_mode, reg_left_mask, reg_scroll_planes} !== 5'b11111)
+			$fatal(1, "Lock must preserve SPS while allowing the standard R#25 bits");
+		access_io(3'd4, 1'b1, 8'h00);
+		write_register(6'd21, 8'h01);
+		write_register(6'd25, 8'h00);
+		if (reg_sprite_priority_shuffle !== 1'b1) $fatal(1, "V58=1 changed SPS");
+		write_register(6'd21, 8'h00);
+		write_register(6'd25, 8'h00);
+		if (reg_sprite_priority_shuffle !== 1'b0) $fatal(1, "Unlocked V9968 mode did not clear SPS");
+		access_io(3'd4, 1'b1, 8'h80);
+		write_register(6'd25, 8'h80);
+		if (reg_sprite_priority_shuffle !== 1'b0) $fatal(1, "Lock allowed SPS to be set");
 
 		$display("Port#1 latch reset test PASSED");
 		$finish;

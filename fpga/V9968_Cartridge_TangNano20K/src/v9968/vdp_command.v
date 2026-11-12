@@ -311,10 +311,10 @@ module vdp_command (
 	end
 
 	assign w_effective_mode		= reg_command_enable || ff_fg4 || (ff_screen_mode[c_g4] || ff_screen_mode[c_g5] || ff_screen_mode[c_g6] || ff_screen_mode[c_g7]);
-	assign w_bpp				= (ff_screen_mode[c_g6] || ff_screen_mode[c_g4]) ? c_bpp_4bit:
+	assign w_bpp				= (ff_fg4 || ff_screen_mode[c_g6] || ff_screen_mode[c_g4]) ? c_bpp_4bit:
 	            				  (ff_screen_mode[c_g5]) ? c_bpp_2bit: c_bpp_8bit;
 	assign w_next				= { 7'd0, ff_pixel_step };
-	assign w_512pixel			= (ff_screen_mode_clone[c_g5] || ff_screen_mode_clone[c_g6]);
+	assign w_512pixel			= !ff_fg4 && (ff_screen_mode_clone[c_g5] || ff_screen_mode_clone[c_g6]);
 	// G7 also covers the YJK modes; only SCREEN 8 uses the optimization.
 	assign w_geo_screen8		= ff_screen_mode[c_g7] && !reg_yjk_mode;
 	assign w_geo_hmmv_start		= register_write && register_num == 6'd46 &&
@@ -967,11 +967,8 @@ module vdp_command (
 		else if( ff_start ) begin
 			ff_read_color	<= 1'b0;
 		end
-		else if( read_color ) begin
-			ff_read_color	<= 1'b1;
-		end
 		else if( ff_state == c_state_lmcm_next ) begin
-			ff_read_color	<= 1'b0;
+			ff_read_color	<= read_color && ff_transfer_ready;
 		end
 	end
 
@@ -989,14 +986,6 @@ module vdp_command (
 		else if( ff_state == c_state_lmmc_next || ff_state == c_state_hmmc_next || (ff_state == c_state_lfmc_next && ff_bit_count == 3'd0) ) begin
 			//	lmmc, hmmc, lfmc が VRAM へ書き終えたので、転送許可 (CPU→R#44)
 			ff_transfer_ready		<= 1'b1;
-		end
-		else if( ff_command == c_lmcm && ff_start ) begin
-			//	lmcm が開始されたので、転送禁止 (S#7→CPU)
-			//	TR は最初のフェッチが完了した時点 (c_state_lmcm_make) で立つ。
-			//	openMSX モデルは遅延評価のため開始時に TR を立てるが、
-			//	実チップでは TR はデータ準備完了時に立つので、RTL で
-			//	開始時に立てると通常のドレインがプリロード値を読み違える。
-			ff_transfer_ready		<= 1'b0;
 		end
 		else if( ff_command == c_lfmc && ff_start ) begin
 			//	lfmc が開始されたので、転送許可
@@ -1073,7 +1062,7 @@ module vdp_command (
 			if( register_data[7:6] != 2'b11 || !(ff_screen_mode_clone[c_g4] || ff_screen_mode_clone[c_g5] || ff_screen_mode_clone[c_g6] || ff_fg4) ) begin
 				ff_pixel_step	<= 3'd1;
 			end
-			else if( ff_screen_mode_clone[c_g5] ) begin
+			else if( ff_screen_mode_clone[c_g5] && !ff_fg4 ) begin
 				ff_pixel_step	<= 3'd4;
 			end
 			else begin
@@ -1515,14 +1504,16 @@ module vdp_command (
 			//	LMCM command --------------------------------------------------
 			c_state_lmcm: begin
 				ff_count_valid			<= 1'b0;
-				//	Read the location of (SX, SY)
-				ff_cache_vram_address	<= w_address_s;
-				ff_cache_vram_valid		<= 1'b1;
-				ff_cache_vram_write		<= 1'b0;
-				ff_state				<= c_state_wait_rdata_en;
-				ff_next_state			<= c_state_lmcm_make;
-				ff_wait_count			<= c_wait_lmcm;
-				ff_xsel					<= ff_sx[9:8];
+				//	Keep the previous S#7 value until a pending TR is read.
+				if( !ff_transfer_ready ) begin
+					ff_cache_vram_address	<= w_address_s;
+					ff_cache_vram_valid		<= 1'b1;
+					ff_cache_vram_write		<= 1'b0;
+					ff_state				<= c_state_wait_rdata_en;
+					ff_next_state			<= c_state_lmcm_make;
+					ff_wait_count			<= c_wait_lmcm;
+					ff_xsel					<= ff_sx[9:8];
+				end
 			end
 			c_state_lmcm_make: begin
 				ff_state				<= c_state_lmcm_next;

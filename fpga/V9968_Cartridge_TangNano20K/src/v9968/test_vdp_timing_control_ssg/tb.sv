@@ -397,21 +397,23 @@ module tb_scroll_group_alignment ();
 		for (i = 11; i <= 24; i = i + 1) check(4, i, 2'd1, "R27=7 left mask");
 		for (i = 25; i <= 523; i = i + 1) check(4, i, cap[0][i - 14], "R27=7 delay");
 		for (i = 524; i < c_cap; i = i + 1) check(4, i, 2'd1, "right border (R27=7)");
-		//	display_color_en (sprites are gated by it): cleared only in the part pushed out by R#27.
+		//	display_color_en is latched at sub phase 15 and held for both halves of the dot.
 		for (i = 0; i < c_cap; i = i + 1) begin
 			if (cap_en[0][i] !== 1'b1) begin
 				if (n_err < 20) $display("en (R27=0): idx=%0d got=%0d expected=1", i, cap_en[0][i]);
 				n_err = n_err + 1;
 			end
-			if (i >= 11 && cap_en[1][i] !== (i >= 17)) begin
-				if (n_err < 20) $display("en (R27=3): idx=%0d got=%0d expected=%0d", i, cap_en[1][i], i >= 17);
+			if (i >= 12 && cap_en[1][i] !== (i >= 18)) begin
+				if (n_err < 20) $display("en (R27=3): idx=%0d got=%0d expected=%0d", i, cap_en[1][i], i >= 18);
 				n_err = n_err + 1;
 			end
-			if (i >= 11 && cap_en[4][i] !== (i >= 25)) begin
-				if (n_err < 20) $display("en (R27=7): idx=%0d got=%0d expected=%0d", i, cap_en[4][i], i >= 25);
+			if (i >= 12 && cap_en[4][i] !== (i >= 26)) begin
+				if (n_err < 20) $display("en (R27=7): idx=%0d got=%0d expected=%0d", i, cap_en[4][i], i >= 26);
 				n_err = n_err + 1;
 			end
 		end
+		if (cap_en[1][11] !== 1'b1 || cap_en[4][11] !== 1'b1)
+			$fatal(1, "display_color_en was cleared before the R#27 left band");
 		//	C: same as A before the write, delayed by 3 dots after the write.
 		for (i = 11; i < 2 * 120; i = i + 1) check(2, i, cap[0][i], "R27 before write");
 		for (i = 2 * 132; i <= 500; i = i + 1) check(2, i, cap[0][i - 6], "R27 after write");

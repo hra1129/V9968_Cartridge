@@ -60,7 +60,7 @@ module vdp_sprite_makeup_pixel (
 	input				clk,					//	42.95454MHz
 
 	input		[13:0]	screen_pos_x,
-	input		[8:0]	pixel_pos_y,
+	input		[9:0]	screen_pos_y,
 	input				screen_v_active,
 
 	input				sprite_mode2,
@@ -928,7 +928,7 @@ module vdp_sprite_makeup_pixel (
 				if( ff_color_en && (ff_color != 4'd0 || reg_color0_opaque) ) begin
 					//	着目プレーンが CC=0 で、かつドットが存在する場合に描画
 					ff_pre_pixel_color_en	<= 1'b1;
-					ff_pre_pixel_color		<= { 4'd0, ff_color };
+					ff_pre_pixel_color		<= { ff_palette_set, ff_color };
 				end
 				else begin
 					ff_pre_pixel_color_en	<= 1'b0;
@@ -974,7 +974,7 @@ module vdp_sprite_makeup_pixel (
 					if( ff_color_en && (ff_color != 4'd0 || reg_color0_opaque) ) begin
 						//	着目プレーンが CC=0 で、かつドットが存在する場合に描画
 						ff_pre_pixel_color_en	<= 1'b1;
-						ff_pre_pixel_color		<= ff_color;
+						ff_pre_pixel_color		<= { ff_palette_set, ff_color };
 					end
 				end
 				else begin
@@ -985,8 +985,8 @@ module vdp_sprite_makeup_pixel (
 				if( ff_pre_pixel_color_en ) begin
 					//	既にスプライトを描画済み
 					if( ff_color_cc ) begin
-						//	着目スプライトは CC=1 の場合は、OR合成。
-						ff_pre_pixel_color		<= ff_pre_pixel_color | ff_color;
+						//	パレットグループを保持し、色番号のみ OR 合成する。
+						ff_pre_pixel_color		<= { ff_pre_pixel_color[7:4], ff_pre_pixel_color[3:0] | ff_color };
 					end
 					else begin
 						//	既に描画済みで、着目スプライトは CC=0 の場合は、隠れて見えない。描画せず。
@@ -996,7 +996,7 @@ module vdp_sprite_makeup_pixel (
 				else begin
 					//	初めての描画
 					ff_pre_pixel_color_en	<= 1'b1;
-					ff_pre_pixel_color		<= ff_color;
+					ff_pre_pixel_color		<= { ff_palette_set, ff_color };
 				end
 			end
 			else begin
@@ -1038,7 +1038,7 @@ module vdp_sprite_makeup_pixel (
 		else if( !ff_sprite_collision && !ff_collision_seen_this_line && w_collision_hit ) begin
 			ff_sprite_collision		<= 1'b1;
 			ff_sprite_collision_x	<= screen_pos_x[11:4] + 9'd12;
-			ff_sprite_collision_y	<= { 1'd0, pixel_pos_y } + 10'd8;
+			ff_sprite_collision_y	<= screen_pos_y + 10'd8;
 		end
 	end
 

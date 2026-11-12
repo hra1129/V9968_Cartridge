@@ -690,14 +690,16 @@ module vdp_cpu_interface (
 				begin
 					ff_vertical_offset <= ff_1st_byte;
 				end
-			8'd25:	//	R#25 = [N/A][CMD][N/A][YAE][YJK][N/A][MSK][SP2]
+			8'd25:	//	R#25 = [SPS][CMD][N/A][YAE][YJK][N/A][MSK][SP2]
 				begin
 					ff_scroll_planes <= ff_1st_byte[0];
 					ff_left_mask <= ff_1st_byte[1];
 					ff_yjk_mode <= ff_1st_byte[3];
 					ff_yae_mode <= ff_1st_byte[4];
 					ff_command_enable <= ff_1st_byte[6];
-					ff_sprite_priority_shuffle <= ff_1st_byte[7];
+					if( !ff_lock_extregs && !ff_v9958_mode ) begin
+						ff_sprite_priority_shuffle <= ff_1st_byte[7];
+					end
 				end
 			8'd26:	//	R#26 = [N/A][N/A][HO8][HO7][HO6][HO5][HO4][HO3]
 				begin

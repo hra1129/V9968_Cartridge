@@ -273,9 +273,9 @@ module vdp_sprite_select_visible_planes (
 					ff_attribute1[7:0]	<= w_attribute_y;
 				end
 				else if( w_phase == 3'd4 ) begin
-					//	vram_rdata = { --, X1, --, X0 };
-					ff_attribute1		<= { 8'd0, ff_attribute1[15: 8], vram_rdata[ 7: 0], ff_attribute1[ 7: 0] };
-					ff_attribute2		<= { 8'd0, ff_attribute1[31:24], vram_rdata[23:16], ff_attribute1[23:16] };
+					//	vram_rdata = { attribute+3 for plane 1, X1, attribute+3 for plane 0, X0 };
+					ff_attribute1		<= { vram_rdata[15: 8], ff_attribute1[15: 8], vram_rdata[ 7: 0], ff_attribute1[ 7: 0] };
+					ff_attribute2		<= { vram_rdata[31:24], ff_attribute1[31:24], vram_rdata[23:16], ff_attribute1[23:16] };
 				end
 				else if( w_phase == 3'd5 ) begin
 					ff_attribute2[7:0]	<= w_attribute_y;

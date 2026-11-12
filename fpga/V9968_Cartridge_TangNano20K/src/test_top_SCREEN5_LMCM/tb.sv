@@ -534,6 +534,81 @@ module tb ();
 	endtask
 
 	// --------------------------------------------------------------------
+	//	Start LMCM with the TR=1 left by LMMC, without writing R#44.
+	// --------------------------------------------------------------------
+	task lmcm_pending_tr_case;
+		logic	[7:0]	sdata;
+		logic	[7:0]	expected;
+		integer			p;
+		integer			time_out;
+
+		plant_vram( 17'h00000, 8'h12 );
+		plant_vram( 17'h00001, 8'h34 );
+		plant_vram( 17'h00002, 8'h56 );
+		plant_vram( 17'h00003, 8'h78 );
+
+		//	R#36..R#46: one-pixel LMMC with color 0Fh.
+		write_io( vdp_io1, 8'd36 );
+		write_io( vdp_io1, 8'h80 + 8'd17 );
+		write_io( vdp_io3, 8'd32 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd1 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd1 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'h0F );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'hB0 );
+		wait_vdp_command();
+
+		write_io( vdp_io1, 8'd2 );
+		write_io( vdp_io1, 8'h80 + 8'd15 );
+		read_io( vdp_io1, sdata );
+		if( sdata[7] !== 1'b1 ) $fatal( 1, "LMMC did not leave TR=1" );
+
+		//	R#32..R#43, then R#45..R#46; R#44 is left untouched.
+		write_io( vdp_io1, 8'd32 );
+		write_io( vdp_io1, 8'h80 + 8'd17 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd8 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'd1 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io1, 8'd45 );
+		write_io( vdp_io1, 8'h80 + 8'd17 );
+		write_io( vdp_io3, 8'd0 );
+		write_io( vdp_io3, 8'hA0 );
+
+		for( p = 0; p < 9; p = p + 1 ) begin
+			write_io( vdp_io1, 8'd2 );
+			write_io( vdp_io1, 8'h80 + 8'd15 );
+			time_out = 0;
+			do begin
+				read_io( vdp_io1, sdata );
+				time_out = time_out + 1;
+				if( time_out > 10000 ) $fatal( 1, "LMCM TR timeout at read %0d", p );
+			end while( sdata[7] !== 1'b1 );
+			write_io( vdp_io1, 8'd7 );
+			write_io( vdp_io1, 8'h80 + 8'd15 );
+			read_io( vdp_io1, sdata );
+			expected = (p == 0) ? 8'h0F : p[7:0];
+			if( sdata !== expected )
+				$fatal( 1, "LMCM read %0d: expected %02h, got %02h", p, expected, sdata );
+		end
+		wait_vdp_command();
+		$display( "[LMCM] CASE4 pending TR -> F1234567, final pixel 8 -> PASS" );
+	endtask
+
+	// --------------------------------------------------------------------
 	//	Test bench
 	// --------------------------------------------------------------------
 	initial begin
@@ -603,6 +678,8 @@ module tb ();
 		lmcm_case( 2, 0, 0, 1, 1, 8'h01, 8'h00, 8'h00, 8'h00 );
 		//	LMCM NX=4, NY=1 at (10,20)
 		lmcm_case( 3, 10, 20, 4, 1, 8'h03, 8'h04, 8'h05, 8'h06 );
+		//	LMMC leaves TR=1; the first LMCM read is the previous R#44.
+		lmcm_pending_tr_case();
 
 		$display( "[LMCM] ALL DONE" );
 		repeat( 100 ) @( posedge clk14m );
