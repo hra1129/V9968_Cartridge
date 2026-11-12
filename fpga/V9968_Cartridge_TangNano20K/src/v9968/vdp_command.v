@@ -217,6 +217,7 @@ module vdp_command (
 	wire		[7:0]	w_cache_vram_rdata;
 	wire				w_cache_vram_rdata_en;
 	wire				w_cache_flush_end;
+	wire				w_command_flush_end;
 	wire				w_effective_mode;
 	wire		[1:0]	w_bpp;					//	c_bpp_Xbit
 	wire				w_512pixel;
@@ -333,7 +334,7 @@ module vdp_command (
 		else if( register_write && register_num == 6'd46 ) begin
 			ff_geo_hmmv <= w_geo_hmmv_start;
 		end
-		else if( w_geo_hmmv_fallback || w_cache_flush_end ) begin
+		else if( w_geo_hmmv_fallback || w_command_flush_end ) begin
 			ff_geo_hmmv <= 1'b0;
 		end
 	end
@@ -758,7 +759,7 @@ module vdp_command (
 			// LINE includes its endpoint; HMMV counts pixels.
 			reg_nx <= reg_nx + 11'd1;
 		end
-		else if( w_geo_hmmv_fallback || (ff_geo_hmmv && w_cache_flush_end) ) begin
+		else if( w_geo_hmmv_fallback || (ff_geo_hmmv && w_command_flush_end) ) begin
 			// LINE masks NX to nine bits when it starts.
 			reg_nx <= { 2'd0, w_reg_nx[8:0] };
 		end
@@ -852,7 +853,7 @@ module vdp_command (
 				reg_ny[10]	<= 1'b0;
 			end
 		end
-		else if( w_cache_flush_end ) begin
+		else if( w_command_flush_end ) begin
 			reg_ny <= ff_geo_hmmv ? 11'd0 : ff_ny;
 		end
 	end
@@ -1048,7 +1049,7 @@ module vdp_command (
 		end
 		else begin
 			ff_start			<= 1'b0;
-			if( ff_geo_hmmv && (w_geo_hmmv_fallback || w_cache_flush_end) ) begin
+			if( ff_geo_hmmv && (w_geo_hmmv_fallback || w_command_flush_end) ) begin
 				ff_command <= c_line;
 			end
 		end
@@ -1171,7 +1172,7 @@ module vdp_command (
 		else if( ff_start ) begin
 			ff_command_execute <= 1'b1;
 		end
-		else if( w_cache_flush_end ) begin
+		else if( w_command_flush_end ) begin
 			ff_command_execute <= 1'b0;
 		end
 	end
@@ -1990,6 +1991,8 @@ module vdp_command (
 	assign w_cache_vram_rdata		= cache_vram_rdata;
 	assign w_cache_vram_rdata_en	= cache_vram_rdata_en;
 	assign w_cache_flush_end		= cache_flush_end;
+	// A previous command's flush must not change the state of a restarted command.
+	assign w_command_flush_end	= w_cache_flush_end && (ff_state == c_state_finish) && !ff_start;
 
 	// --------------------------------------------------------------------
 	//	Status registers
