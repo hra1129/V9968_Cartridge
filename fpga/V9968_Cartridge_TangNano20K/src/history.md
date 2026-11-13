@@ -13,9 +13,19 @@
 - 上記修正だけで Gowin ビルドすると、配置が変わって `u_v9968/u_video_out/ff_vs` → `u_hdmi_converter/old_vs`（clk85m→clk42m）の hold が -0.042ns になった。
   - この経路は、SDC が CLKOUTD の遅れを見込んで意図的に 0.5ns の hold 余裕を要求している同期関係の経路で、除外する根拠はない。hold 補正（Correct_Hold_Violation）が有効でも残った。
   - `hdmi_converter` は clk85m の `video_vs` を `old_vs` と `meas_old_vs` の2つの FF で別々に取り込んでいた。clk42m 側の受け口を1つの FF（`vs42`）にまとめ、2つの VS エッジ検出はそこから取るようにした。VS 検出は clk42m で1クロック遅れるが、VS の立ち下がりは DE=0 の期間なので書き込み制御と行数計測に影響はない。
-  - `hdmi_converter/test001` の全シナリオが PASS。
-- Gowin 1.9.12.03 の実プロジェクト設定でビットストリーム生成まで完了。setup の最小 slack は +0.075ns、hold の最小 slack は +0.062ns で、全クロックの setup/hold 違反端点は0。Logic 82%。
-- 実機未確認。コミットは行っていない。
+  - `hdmi_converter/test001` の全28ケース（シナリオ0の位相12通り＋シナリオ1〜8×分周位相2通り）が PASS。
+- Gowin 1.9.12.03 の実プロジェクト設定でビットストリーム生成まで完了。setup の最小 slack は +0.075ns（`u_command/ff_command` 起点のコマンド回路内経路）、hold の最小 slack は +0.062ns で、全クロックの setup/hold TNS・違反端点は0。Logic 82%。
+  - setup の余裕は前回ビルドの +0.293ns より小さい。違反ではないが、次回以降のビルドでコマンド回路の経路を注視する。
+- 変更ファイル: `v9968/vdp_command.v`、`v9968/test_vdp_command/tb_flushend.sv`、`hdmi_converter/hdmi_converter.v`、`history.md`。
+- ユーザーが v0.99.5 としてコミットした（ca97145）。
+
+### 次回の作業
+
+- v0.99.5 を実機でさらに確認する（起動ロゴ、SCREEN5〜8 の表示、VDP コマンドを多用するソフト、HDMI 出力の安定性）。
+- hesoten さんの報告（`hra_report`）に残っている項目があれば、順に再現確認から進める。
+- setup の余裕の改善は、事前には行わない。次に RTL を修正してビルドしたとき、その時点の最悪経路に合わせて対処する。
+  - v0.99.5 の最悪経路は、LRMM のウィンドウ判定（`c_state_lrmm_wait_source`、`ff_command` → `ff_source`、+0.075ns）。
+  - 対策案：判定結果を1クロック前に FF に入れる。SX/SY は VRAM 読み出しを待っている間は変わらないので、動作は変わらない。
 
 ## 2026-11-13 キャッシュフラッシュ完了通知の競合を修正
 
