@@ -83,7 +83,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Sat Nov 14 16:16:47 2026
+<td>Sat Nov 14 19:53:35 2026
 </td>
 </tr>
 <tr>
@@ -97,24 +97,24 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <tr>
 <td class="label">Place & Route Process</td>
 <td>Running placement:
-   Placement Phase 0: CPU time = 0h 0m 6s, Elapsed time = 0h 0m 6s
-   Placement Phase 1: CPU time = 0h 0m 0.694s, Elapsed time = 0h 0m 0.694s
-   Placement Phase 2: CPU time = 0h 0m 16s, Elapsed time = 0h 0m 16s
-   Placement Phase 3: CPU time = 0h 0m 10s, Elapsed time = 0h 0m 10s
-   Total Placement: CPU time = 0h 0m 33s, Elapsed time = 0h 0m 33s
+   Placement Phase 0: CPU time = 0h 0m 9s, Elapsed time = 0h 0m 9s
+   Placement Phase 1: CPU time = 0h 0m 0.963s, Elapsed time = 0h 0m 0.963s
+   Placement Phase 2: CPU time = 0h 0m 22s, Elapsed time = 0h 0m 22s
+   Placement Phase 3: CPU time = 0h 0m 12s, Elapsed time = 0h 0m 12s
+   Total Placement: CPU time = 0h 0m 44s, Elapsed time = 0h 0m 44s
 Running routing:
-   Routing Phase 0: CPU time = 0h 0m 0.017s, Elapsed time = 0h 0m 0.017s
-   Routing Phase 1: CPU time = 0h 0m 1s, Elapsed time = 0h 0m 1s
-   Routing Phase 2: CPU time = 0h 0m 52s, Elapsed time = 0h 0m 52s
+   Routing Phase 0: CPU time = 0h 0m 0.015s, Elapsed time = 0h 0m 0.015s
+   Routing Phase 1: CPU time = 0h 0m 0.964s, Elapsed time = 0h 0m 0.964s
+   Routing Phase 2: CPU time = 0h 0m 49s, Elapsed time = 0h 0m 49s
    Routing Phase 3: CPU time = 0h 0m 0s, Elapsed time = 0h 0m 0s
-   Total Routing: CPU time = 0h 0m 53s, Elapsed time = 0h 0m 53s
+   Total Routing: CPU time = 0h 0m 50s, Elapsed time = 0h 0m 50s
 Generate output files:
    CPU time = 0h 0m 3s, Elapsed time = 0h 0m 3s
 </td>
 </tr>
 <tr>
 <td class="label">Total Time and Memory Usage</td>
-<td>CPU time = 0h 1m 29s, Elapsed time = 0h 1m 29s, Peak memory usage = 735MB</td>
+<td>CPU time = 0h 1m 37s, Elapsed time = 0h 1m 37s, Peak memory usage = 737MB</td>
 </tr>
 </table>
 <br/>
@@ -129,12 +129,12 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Logic</td>
-<td>16850/20736</td>
-<td>82%</td>
+<td>17015/20736</td>
+<td>83%</td>
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --LUT,ALU,ROM16</td>
-<td>16718(14250 LUT, 2468 ALU, 0 ROM16)</td>
+<td>16883(14416 LUT, 2467 ALU, 0 ROM16)</td>
 <td>-</td>
 </tr>
 <tr>
@@ -144,7 +144,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">Register</td>
-<td>9145/15915</td>
+<td>9149/15915</td>
 <td>58%</td>
 </tr>
 <tr>
@@ -154,7 +154,7 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">&nbsp &nbsp --Logic Register as FF</td>
-<td>9072/15552</td>
+<td>9076/15552</td>
 <td>59%</td>
 </tr>
 <tr>
@@ -169,8 +169,8 @@ Generate output files:
 </tr>
 <tr>
 <td class="label">CLS</td>
-<td>9804/10368</td>
-<td>95%</td>
+<td>9883/10368</td>
+<td>96%</td>
 </tr>
 <tr>
 <td class="label">I/O Port</td>
@@ -299,14 +299,9 @@ Generate output files:
 <td> BR BL</td>
 </tr>
 <tr>
-<td class="label">ff_reset3_n2</td>
-<td>PRIMARY</td>
-<td> TR TL BL</td>
-</tr>
-<tr>
 <td class="label">clk143m</td>
 <td>PRIMARY</td>
-<td> TR BR</td>
+<td> BR BL</td>
 </tr>
 <tr>
 <td class="label">clk85m</td>
@@ -316,7 +311,7 @@ Generate output files:
 <tr>
 <td class="label">O_sdram_clk_d</td>
 <td>PRIMARY</td>
-<td> TR TL</td>
+<td> TR TL BR</td>
 </tr>
 <tr>
 <td class="label">clk42m</td>
@@ -327,6 +322,11 @@ Generate output files:
 <td class="label">clk28m</td>
 <td>PRIMARY</td>
 <td> BR BL</td>
+</tr>
+<tr>
+<td class="label">u_geo3d/u_engine/fcur_87_8</td>
+<td>PRIMARY</td>
+<td> TL BL</td>
 </tr>
 <tr>
 <td class="label">ff_reset_n2</td>
@@ -354,12 +354,12 @@ Generate output files:
 <td> -</td>
 </tr>
 <tr>
-<td class="label">u_geo3d/u_engine/eya_16_10</td>
+<td class="label">u_geo3d/u_engine/eya_16_6</td>
 <td>LW</td>
 <td> -</td>
 </tr>
 <tr>
-<td class="label">u_geo3d/u_engine/fcur_87_13</td>
+<td class="label">u_geo3d/u_engine/z_core_addr_4_9</td>
 <td>LW</td>
 <td> -</td>
 </tr>

@@ -13,11 +13,14 @@ module tb_vram_prefetch_wait;
 	reg slot_wr_n = 1'b1;
 	reg [7:0] slot_address = 8'd0;
 	reg [7:0] slot_wdata = 8'd0;
+	reg slot_wdata_settling = 1'b0;
+	integer data_settle_ps = 0;
 	wire [7:0] slot_data;
 	wire slot_data_dir;
 	wire vdp_wait;
 	wire slot_wait = initial_busy | vdp_wait;
-	assign slot_data = !slot_wr_n ? slot_wdata : 8'hZZ;
+	//	While settling, D0/D1 have not risen yet (as observed on SX-2).
+	assign slot_data = !slot_wr_n ? (slot_wdata_settling ? (slot_wdata & 8'hFC) : slot_wdata) : 8'hZZ;
 
 	wire [2:0] bus_address;
 	wire bus_ioreq;
@@ -228,6 +231,12 @@ module tb_vram_prefetch_wait;
 			slot_wdata = value;
 			slot_wr_n = 1'b0;
 			slot_ioreq_n = 1'b0;
+			if( data_settle_ps > 0 ) begin
+				slot_wdata_settling = 1'b1;
+				fork
+					#(data_settle_ps) slot_wdata_settling = 1'b0;
+				join_none
+			end
 			#1;
 			if( slot_wait !== 1'b1 ) $fatal(1, "WRITE %h did not assert WAIT", port);
 			cycles = 0;
@@ -564,6 +573,20 @@ module tb_vram_prefetch_wait;
 		set_read_address(base, 14'h0B00);
 		wait_prefetch();
 		read_port(base, expected[18'h00B00], -1, 14, 0);
+
+		$display("[10] Write data whose D0/D1 settle 80ns after /WR");
+		data_settle_ps = 80000;
+		write_register(base, 6'd14, 8'h01);
+		set_write_address(base, 14'h3F50);
+		for( i = 0; i < 4; i = i + 1 ) begin
+			write_port(base, 8'hFF - i[7:0]);
+			expected[18'h07F50 + i] = 8'hFF - i[7:0];
+		end
+		data_settle_ps = 0;
+		write_register(base, 6'd14, 8'h01);
+		set_read_address(base, 14'h3F50);
+		for( i = 0; i < 4; i = i + 1 )
+			read_port(base, expected[18'h07F50 + i], -1, -1, 0);
 
 		$display("VRAM prefetch/WAIT integration PASSED; max prefetched-read response %0t ps", max_fast_read_time);
 		test_passed = 1'b1;

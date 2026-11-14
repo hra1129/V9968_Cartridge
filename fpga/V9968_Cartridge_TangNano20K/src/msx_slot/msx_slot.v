@@ -93,6 +93,9 @@ module msx_slot(
 
 	reg		[7:0]	ff_slot_address;
 	reg		[7:0]	ff_slot_data;
+	reg		[3:0]	ff_wr_count			= 4'd0;
+	wire			w_slot_iorq_wr;
+	wire			w_wr_data_ready;
 	reg		[2:0]	ff_bus_address;
 	reg		[3:0]	ff_bus_sysctrl_address;
 	wire			w_active;
@@ -112,6 +115,8 @@ module msx_slot(
 	reg				ff_vdp_write_ready	= 1'b0;
 	wire	[7:0]	w_io_address;
 	wire			w_slot_vdp_access;
+
+	localparam		c_wr_sample_delay	= 4'd8;		//	clocks after the synchronized /WR fall (about 93ns)
 
 	assign w_io_address	= (dipsw == 1'b0) ? 8'h88: 8'h98;
 	assign w_slot_vdp_access = p_slot_address[7:3] == w_io_address[7:3] &&
@@ -156,8 +161,26 @@ module msx_slot(
 			//	hold
 		end
 		else begin
-			ff_iorq_wr			<= ~ff_slot_ioreq_n & ~ff_slot_wr_n;
+			ff_iorq_wr			<= w_slot_iorq_wr & w_wr_data_ready;
 			ff_iorq_rd			<= ~ff_slot_ioreq_n & ~ff_slot_rd_n;
+		end
+	end
+
+	// --------------------------------------------------------------------
+	//	書き込みデータは /WR 直後だとまだ立ち上がりきっていないビットがある
+	//	(SX-2 で FFh→FDh, 7Fh→7Ch を確認) ため、一定時間待ってから 1回だけ取り込む
+	//	Some data bits are still rising just after /WR falls (FFh->FDh and
+	//	7Fh->7Ch were observed on SX-2), so sample once after a fixed delay.
+	// --------------------------------------------------------------------
+	assign w_slot_iorq_wr	= ~ff_slot_ioreq_n & ~ff_slot_wr_n;
+	assign w_wr_data_ready	= (ff_wr_count == c_wr_sample_delay);
+
+	always @( posedge clk ) begin
+		if( !w_slot_iorq_wr ) begin
+			ff_wr_count		<= 4'd0;
+		end
+		else if( !w_wr_data_ready ) begin
+			ff_wr_count		<= ff_wr_count + 4'd1;
 		end
 	end
 
@@ -172,7 +195,7 @@ module msx_slot(
 	end
 
 	always @( posedge clk ) begin
-		if( !ff_slot_wr_n ) begin
+		if( w_slot_iorq_wr && ff_wr_count == (c_wr_sample_delay - 4'd1) ) begin
 			ff_slot_data		<= p_slot_data;
 		end
 	end
