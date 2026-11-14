@@ -218,6 +218,21 @@ module tb;
 		solid_pixels(24'h0000FF);
 		bg_border = 1'b0;
 
+		// SCREEN8 (EPAL=0) + SP3: fixed 16 colors (palette set ignored) with translucency over GRB332 background.
+		yjk_mode = 1'b0;
+		yae_mode = 1'b0;
+		sprite_mode3 = 1'b1;
+		bg_color = 8'hFF;
+		sprite_color = 8'hA5;
+		sprite_en = 1'b1;
+		sprite_transparent = 2'd0;
+		solid_pixels(24'h007B5A);
+		sprite_transparent = 2'd2;
+		solid_pixels(24'h8BBFB0);
+		sprite_en = 1'b0;
+		solid_pixels(24'hFFFFFF);
+		sprite_mode3 = 1'b0;
+
 		test_passed = 1'b1;
 		$display("VDP palette YJK, sprite alignment, masking, and blend tests PASSED");
 		$finish;

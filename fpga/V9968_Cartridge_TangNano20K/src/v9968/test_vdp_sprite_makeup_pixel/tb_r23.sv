@@ -7,6 +7,7 @@ module tb_r23;
 	reg [9:0] screen_pos_y = 10'd0;
 	reg [7:0] pixel_pos_y = 8'd0;
 	reg sprite_nonR23_mode = 1'b0;
+	reg sprite_mode3 = 1'b0;
 	reg interleave = 1'b0;
 	reg [31:0] vram_rdata = 32'd0;
 	reg [7:0] vram_rdata8 = 8'd0;
@@ -36,7 +37,7 @@ module tb_r23;
 		.reg_color0_opaque(1'b0), .reg_sprite_magify(1'b0), .reg_sprite_16x16(1'b0),
 		.reg_sprite_disable(1'b0), .reg_sprite_attribute_table_base(11'd0),
 		.reg_sprite_pattern_generator_table_base(7'd4), .reg_left_mask(1'b0),
-		.reg_sprite_nonR23_mode(sprite_nonR23_mode), .reg_sprite_mode3(1'b0),
+		.reg_sprite_nonR23_mode(sprite_nonR23_mode), .reg_sprite_mode3(sprite_mode3),
 		.reg_sprite16_mode(1'b0), .reg_sprite_priority_shuffle(1'b0), .reg_ext_palette_mode(1'b1)
 	);
 
@@ -124,7 +125,39 @@ module tb_r23;
 		end
 	endtask
 
+	//	SP3, SVNS=0: Y=1015 (-9), MGY=16 must be selected for display line 0 (selection line -1).
+	task automatic run_sp3_top(input [7:0] r23, input [8:0] expected_pos_y, input [4:0] expected_count);
+		integer i, phase;
+		begin
+			@(negedge clk);
+			reset_n = 1'b0;
+			interleave = 1'b0;
+			sprite_nonR23_mode = 1'b0;
+			sprite_mode3 = 1'b1;
+			screen_pos_x = 14'd0;
+			screen_pos_y = 10'h3FF;
+			pixel_pos_y = 8'hFF + r23;
+			for (i = 0; i < 32; i = i + 1) attributes[i] = 32'h000000D8;
+			attributes[0] = {8'h00, 8'd16, 8'h03, 8'hF7};
+			repeat (4) @(negedge clk);
+			reset_n = 1'b1;
+			step(14'h3DFF);
+			step(14'h3FFF);
+			for (phase = 0; phase < 16 * 276; phase = phase + 1) step(phase);
+			if (u_dut.u_select_visible_planes.selected_pixel_pos_y !== expected_pos_y)
+				$fatal(1, "SP3 line -1 Y expected %h, got %h (R#23=%0d)",
+					expected_pos_y, u_dut.u_select_visible_planes.selected_pixel_pos_y, r23);
+			if (u_dut.w_selected_count !== expected_count)
+				$fatal(1, "SP3 Y=-9 expected %0d selected sprites, got %0d (R#23=%0d)",
+					expected_count, u_dut.w_selected_count, r23);
+			sprite_mode3 = 1'b0;
+		end
+	endtask
+
 	initial begin
+		run_sp3_top(8'd0, 9'h1FF, 5'd1);
+		run_sp3_top(8'd1, 9'h000, 5'd1);
+		run_sp3_top(8'd20, 9'h013, 5'd0);
 		run_case(1'b0, 1'b0);
 		run_case(1'b1, 1'b0);
 		run_case(1'b0, 1'b1);

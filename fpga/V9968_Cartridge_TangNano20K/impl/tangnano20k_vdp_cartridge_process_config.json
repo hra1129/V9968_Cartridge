@@ -49,7 +49,7 @@
     "MULTIJUMP_ADDRESS_WIDTH": "24",
     "MULTIJUMP_MODE": "Single",
     "MULTIJUMP_SPI_FLASH_ADDRESS": "000000",
-    "Map_Option": "2",
+    "Map_Option": "1",
     "Max_Fanout": 1000,
     "Multi_Boot": true,
     "Netlist_Hierarchy": true,

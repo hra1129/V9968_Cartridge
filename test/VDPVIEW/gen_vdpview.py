@@ -847,6 +847,7 @@ def main():
     if 'build_v9968_pages' in globals():
         build_v9968_pages()
     build_yjk_pages()
+    build_sc8_sp3_page()
     total = write_inc(os.path.join(HERE, 'VDPVIEW.INC'))
     for i, p in enumerate(PAGES):
         print('%2d %-28s %6d bytes' % (i + 1, p.title, p.size))
@@ -1101,6 +1102,49 @@ def build_v9968_pages():
     p.scr.text(16, 196, 'SPRITE = SWATCH BELOW', 15)
     p.expect = lambda p=p, pal=pal, sp=ss.render(): expect_image(p, pal, sp)
     p.doc = 'V9968: SCREEN 8 + EPAL=1 + スプライトモード3 の半透明 TP0〜3（背景4色との合成）とパレットセット'
+
+
+# SCREEN 8 fixed sprite colours (G, R, B) and the 5 bit expansion of GRB332
+SC8_SPRITE_GRB = [(0, 0, 0), (0, 0, 1), (0, 3, 0), (0, 3, 1), (3, 0, 0), (3, 0, 1), (3, 3, 0), (3, 3, 1),
+                  (4, 7, 1), (0, 0, 3), (0, 7, 0), (0, 7, 3), (7, 0, 0), (7, 0, 3), (7, 7, 0), (7, 7, 3)]
+
+
+def grb332_to5(g, r, b):
+    e3 = lambda v: (v << 2) | (v >> 1)
+    return (e3(r), e3(g), [0, 9, 18, 31][b])
+
+
+def build_sc8_sp3_page():
+    # SCREEN 8 (EPAL=0) + sprite mode 3: fixed 16 colours, palette set ignored,
+    # TP0-3 blended with the GRB332 background. The background/sprite pairs are
+    # chosen so that every blend is exactly a GRB332 colour (swatch = exact result).
+    p = page('V9968 SC8 SP3 FIXED COLOR', 'G7', v9968=True)
+    p.r20 = 0x08
+    p.r7 = 0
+    p.regs = [(0, 0x0E), (2, 0x1F), (5, 0xF7), (11, 0x01), (6, 0x20)]
+    pal5 = [grb332_to5(c >> 5, (c >> 2) & 7, c & 3) for c in range(256)]
+    pal5 += [grb332_to5(*SC8_SPRITE_GRB[c]) for c in range(16)]
+    to332 = {v: c for c, v in enumerate(pal5[:256])}
+    ss = SpriteSet3(p, 0xFA00)
+    rows = [(10, 0x9C), (12, 0xF0), (9, 0x93), (8, 0x1D)]
+    for ri, (code, bg) in enumerate(rows):
+        ss.tile(ri, [[code] * 16 for _ in range(16)])
+        y = 26 + ri * 44
+        p.fill(8, y - 6, 240, 40, bg)
+        for tp in range(4):
+            x = 16 + tp * 60
+            mix = to332[blend5(pal5[256 + code], pal5[bg], tp)]
+            p.fill(x, y + 16, 48, 12, mix)
+            ss.add(x, y, ri, mgx=48, mgy=16, tp=tp, ps=1 + ri * 4 + tp)
+    for tp in range(4):
+        p.scr.text(16 + tp * 60 + 12, 12, 'TP%d' % tp, 0xFF)
+    ss.write()
+    p.scr.text(16, 2, 'V9968 SC8 SP3 FIXED', 0xFF)
+    p.scr.text(16, 196, 'SPRITE = SWATCH BELOW', 0xFF)
+    spx = {k: (256 + (pn & 15), tp) for k, (pn, tp) in ss.render().items()}
+    p.expect = lambda p=p, pal=pal5, sp=spx: expect_image(p, pal, sp)
+    p.doc = ('V9968: SCREEN 8（EPAL=0）+ スプライトモード3。固定16色（パレットセット指定は無視）と、'
+             'GRB332 背景との半透明 TP0〜3')
 
 
 if __name__ == '__main__':

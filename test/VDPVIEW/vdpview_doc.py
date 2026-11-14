@@ -80,6 +80,17 @@ CHECKS = {
         'TP0〜3 の各スプライトが、すぐ下の見本と同じ色（背景4色との合成）',
         'スプライトの上下にはみ出した背景の帯は元の色のまま',
     ],
+    'V9968 SC8 SP3 FIXED COLOR': [
+        'TP0〜3 の各スプライトが、すぐ下の見本と同じ色で、つなぎ目が見えない'
+        '（TP0 は固定16色そのもの、TP1〜3 は GRB332 背景との合成）',
+        '各スプライトにはパレットセット1〜16を指定しているが、色には影響しない',
+        'スプライトの上と左右に見える背景の帯は元の色のまま',
+    ],
+}
+
+# Pages with only the expected image (openMSX does not draw them)
+EXPECT_ONLY = {
+    'V9968 SC8 SP3 FIXED COLOR',
 }
 
 # openMSX (Panasonic_FS-A1ST_V9968) differences from the expected image.
@@ -128,6 +139,8 @@ def render_md(pages):
     w('- P01〜P13 は openMSX（Panasonic FS-A1GT、V9958）のスクリーンショットです。'
       '実機 V9958（FS-A1GT）でも同じ見え方になることを確認済みで、そのキャプチャも並べています。')
     w('- P17 は後から追加したページで、openMSX（Panasonic FS-A1GT、V9958）のスクリーンショットです。')
+    w('- P18（V9968 専用）は後から追加したページで、期待画像（V9968 マニュアルと RTL に基づく）だけを載せています。'
+      'openMSX はこのページの SP3 スプライトを描画しないため、スクリーンショットはありません。')
     w('- P14〜P16（V9968 専用）は、openMSX（Panasonic_FS-A1ST_V9968）のスクリーンショットと、'
       '生成器 gen_vdpview.py のモデルから描いた期待画像（V9968 マニュアルと RTL に基づく）の両方を載せています。'
       '判定には期待画像を使います。')
@@ -157,6 +170,10 @@ def render_md(pages):
             w('![P%02d openMSX](img/p%02d_omsx.png)' % (i + 1, i + 1))
             w('')
             w('openMSX との違い: ' + OMSX_NOTES[p.title])
+        elif p.title in EXPECT_ONLY:
+            w('期待画像（判定に使う）:')
+            w('')
+            w('![P%02d](img/p%02d.png)' % (i + 1, i + 1))
         else:
             w('![P%02d](img/p%02d.png)' % (i + 1, i + 1))
             if os.path.exists(os.path.join(HERE, 'img', 'p%02d_v9958.jpg' % (i + 1))):

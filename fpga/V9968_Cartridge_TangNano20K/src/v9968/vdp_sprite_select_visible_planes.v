@@ -101,6 +101,7 @@ module vdp_sprite_select_visible_planes (
 	wire		[2:0]	w_phase;
 	wire		[3:0]	w_sub_phase;
 	wire		[8:0]	w_pixel_pos_y;
+	wire				w_pixel_pos_y_negative;
 	reg			[8:0]	ff_pixel_pos_y;
 	reg			[5:0]	ff_plane_count;
 	reg			[5:0]	ff_current_plane_num;		//	Plane#0...#63
@@ -317,9 +318,13 @@ module vdp_sprite_select_visible_planes (
 			ff_pixel_pos_y <= 9'd0;
 		end
 		else if( screen_pos_x == 14'h3FFF ) begin
-			ff_pixel_pos_y <= reg_sprite_nonR23_mode ? screen_pos_y : { 1'b0, pixel_pos_y };
+			ff_pixel_pos_y <= reg_sprite_nonR23_mode ? screen_pos_y : { w_pixel_pos_y_negative, pixel_pos_y };
 		end
 	end
+
+	//	SP3 の 10bit Y 判定用: 画面上端より上 (screen_pos_y < 0) で R#23 を加えても桁上がりしない場合は
+	//	負の座標として扱う (例: R#23=0 のライン -1 は 255 ではなく -1)
+	assign w_pixel_pos_y_negative	= reg_sprite_mode3 && screen_pos_y[8] && (pixel_pos_y >= screen_pos_y[7:0]);
 
 	assign w_pixel_pos_y	= ff_pixel_pos_y;
 	assign selected_pixel_pos_y	= ff_pixel_pos_y;

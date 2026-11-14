@@ -1,3 +1,77 @@
+## 2026-11-14 VDPVIEW に SC8 + SP3 の固定色・半透明のページ（P18）を追加し、test_vdp_sprite_info_collect を現在のポートで書き直し
+
+- **VDPVIEW P18「V9968 SC8 SP3 FIXED COLOR」**（V9968 専用、R#20=08h、EPAL=0）
+  - 4行の GRB332 背景（9Ch、F0h、93h、1Dh）の上に、固定色10、12、9、8 の SP3 スプライトを TP0〜3 で置いた。各スプライトのパレットセットは1〜16（無視されることの確認）。
+  - 背景とスプライト色の組は、TP0〜3 のすべての合成結果がちょうど GRB332 で表せるものを選んだ。スプライトのすぐ下に、その GRB332 値の見本を描いている。正しければ、スプライトと見本の間につなぎ目が見えない。
+  - 既存のページ番号を変えないように末尾に追加した。openMSX は SP3 を描画しないため、資料には期待画像（`img/p18.png`）だけを載せた。
+  - 変更：`gen_vdpview.py`、`vdpview_doc.py`。`VDPVIEW.COM`/`.INC`/`.md` は再生成した（COM は 50,429 バイト）。
+- **`test_vdp_sprite_info_collect`**：古いポート（screen_active、13ビットの screen_pos_x など）のままで動かなかった。現在の RTL のポートで、自己判定するベンチに書き直した。
+  - VRAM モデルは、アドレスから決まるデータを要求の4クロック後に返す（それまでは X）。
+  - 確認すること：
+    - VRAM 要求アドレスの並び。
+    - color、plane_x、y、mgx、mgy、bit_shift、palette_set、pattern（左右）、makeup_plane。
+    - 収集したプレーン数。
+  - ケース：SP1 8x8、SP1 16x16、SP2 16x16（SAT[8:7]=11/01）、SP2 8x8、SP3 16プレーン/3プレーン、selected_count=0、表示 OFF、表示 OFF の後に ON。
+  - RTL は変えていない。全ケースが PASS。
+  - わざと RTL を壊したコピー（SP3 の右パターンのアドレス、SP2 のカラーアドレスの Y）では、該当するケースが NG になることを確認した。
+  - `run.bat` は `vsim -c -t 1ns` で動かし、PASS 行がなければ exit 1 で終わる（`pause` は削除）。`run.do` は使わなくなったので削除した。
+- コミットはユーザーが行う。
+
+### 次回の作業
+
+- 実機（SX-2 + V9968）で VDPVIEW P18 を確認する。
+
+## 2026-11-14 SCREEN8（EPAL=0）の SP3 で半透明が効かない不具合を修正し、マニュアルのスプライト色の記述を訂正
+
+- **仕様**：SCREEN8（Graphic7、EPAL=0、YJK=0）では、スプライトモード2 も3 も V9958 と同じ固定16色を使う。パレットセットの指定は無効。SP3 の半透明（TP0〜3）は有効で、固定色と背景（GRB332）を混ぜる。パレットを通るのは EPAL=1 のときだけ。
+- **不具合（`vdp_color_palette.v`）**：SC8 の RGB 経路（`ff_display_color256`）が出力の選択で常に優先されていた。そのため SP3 の合成結果（`ff_display_*16`）が捨てられ、半透明が効かずに常に不透明になっていた。
+- **修正**：SC8・EPAL=0・SP3（`w_g7_rgb_sp3`）のときだけ、次のようにした。
+  - 背景の GRB332（`ff_display_bg256`、sub phase 1 で取り込む）を 5 ビットの RGB に広げて `ff_display_*16` に入れる。
+  - 固定16色のスプライト色を 5 ビットに広げ、`func_sprite_mix` で合成する。
+  - SP2 と、SC8 以外のモードは変えていない。
+- **マニュアル**（`doc/manual/V9968_MSX-VIDEO_Technical_data_Book*.odt`、日本語版・英語版）：§6.4.4、§7.4.3、§7.4.7 の「SC8 のスプライトもパレット経由」という誤りを、上の仕様に直した。§7.4.3 には固定16色の GRB332 の値を書いた。PDF の出力はユーザーが行う。
+- **テスト**：`test_vdp_color_palette/tb.sv` に、SC8・SP3 の固定色（TP0、パレットセット指定 A は無視）、TP2 の 50% 合成、スプライトなしの3ケースを追加した。修正前の RTL では失敗し（8BBFB0 を期待して 007B5A）、修正後は tb と tb_screen8_mask が PASS。
+- **Gowin 1.9.12.03**：Logic 81%、CLS 95%。
+  - 標準の設定では、SDRAM の読み出し経路（`ff_main_state` → `ff_sdr_read_data` の CE、clk85m→clk_sdram）が −0.235ns になった。配置の変化によるもので、今回の修正箇所ではない。
+  - ユーザーが合成オプションを変えたビルドではパスした。
+- 変更ファイル: `v9968/vdp_color_palette.v`、`v9968/test_vdp_color_palette/tb.sv`、`doc/manual/*.odt`、`history.md`。
+- コミットはユーザーが行う。
+
+### 次回の作業
+
+- 【済】実機で SC8 + SP3 の半透明を確認する（VDPVIEW には SC8・SP3 のページがない）。→ P18 を追加。実機確認は残っている。
+- 【済】`test_vdp_sprite_info_collect` のテストベンチのポートが RTL と合っていない（以前からの問題）。
+
+## 2026-11-14 SP3 の上端のスプライトで、ライン0が欠ける不具合を修正
+
+- **症状**：VDPVIEW P14（SC5 + SP3、R#20=08h）で、Y=−8 で上端にかかったスプライトのライン0だけが表示されなかった。
+- **原因（`vdp_sprite_select_visible_planes.v`）**
+  - ライン0 に表示するスプライトは、ライン −1 の間に選ぶ。
+  - SVNS=1 では screen_pos_y を符号付きで使うので、ライン −1 は −1 になり正しかった。
+  - SVNS=0 では、8ビットの pixel_pos_y＝(−1+R#23) mod 256＝255 を `{0, pixel_pos_y}` として、SP3 の10ビットの Y と比べていた。そのため Y=1015（−9）、MGY=16 のスプライトが、ライン0 で非表示と判定された（オフセットが 8 ではなく 264 になる）。
+  - SP1/2 は比較が8ビットの周回なので問題ない。
+- **修正**：SP3 で SVNS=0 のときだけ、次の条件を満たす pixel_pos_y を負の座標（pixel_pos_y−256）として扱う。
+  - 条件：screen_pos_y が負で、R#23 を足しても桁上がりしない（`pixel_pos_y >= screen_pos_y[7:0]`）。
+  - R#23=0 のライン −1 は −1 になり、データブックの「Y=−1 でライン0 から表示」と一致する。
+  - SP1/2 と SVNS=1 は変えていない。
+  - 制限：R#23≠0 のとき画面途中にできる背景の周回の継ぎ目（pixel_pos_y が 255→0）をまたぐ SP3 スプライトは、継ぎ目で途切れる。
+- **テスト**
+  - `test_vdp_sprite_makeup_pixel/tb_r23.sv` に、SP3・SVNS=0・Y=−9・MGY=16 のライン −1 の選択テストを追加した（R#23=0/1 では選ばれる、20 では選ばれない）。
+  - 修正前の RTL では失敗し、修正後は合格する。
+  - `test_vdp_sprite_makeup_pixel`（tb、tb_r23）と `test_vdp_sprite_select_visible_planes` が PASS。
+- Gowin 1.9.12.03 でビットストリーム生成まで完了。setup の最小 slack は +0.317ns、hold は +0.062ns、違反端点は0。Logic 82%。
+- 変更ファイル: `v9968/vdp_sprite_select_visible_planes.v`、`v9968/test_vdp_sprite_makeup_pixel/tb_r23.sv`、`history.md`。
+- コミットはユーザーが行う。
+
+### 次回の作業
+
+- 【済】実機で VDPVIEW P14 の上端の赤い線が消えたことを確認した。
+- 【保留】VDPVIEW が P06→P07 の切り替え中（表示 OFF のまま）に1回だけハングした。その後の約13回の実行では再現しない。VDPCHK と VRAMSTRS は `SUCCESS OF ALL`。
+  - この区間では SP3 は OFF なので、今回の修正部分は動いていない。
+  - 次にハングしたら、基板の LED の状態を確認する。
+    - シアンのまま点灯している場合：CPU は S#2 の CE を待ち続けている（HMMV の CE が下がらない）。
+    - 消灯している場合：CPU が WAIT で止まったか、暴走している。
+
 ## 2026-11-14 VDPVIEW・VRAMSTRS を作成し、バスの書き込みデータ取り込みと YJK モードの周辺色を修正
 
 - **VDPVIEW.COM（`test/VDPVIEW/`）目視確認テスト**
