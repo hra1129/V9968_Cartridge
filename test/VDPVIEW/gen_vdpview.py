@@ -875,6 +875,7 @@ def msx_to5(rgb):
 
 class Sprite3:
     def __init__(self, x, y, tile, mgx=16, mgy=16, rvx=0, rvy=0, tp=0, ps=0):
+        assert 0 <= ps < 16, 'sprite palette set must be 0..15'
         self.x, self.y, self.tile = x, y, tile
         self.mgx, self.mgy, self.rvx, self.rvy, self.tp, self.ps = mgx, mgy, rvx, rvy, tp, ps
 
@@ -1135,7 +1136,7 @@ def build_sc8_sp3_page():
             x = 16 + tp * 60
             mix = to332[blend5(pal5[256 + code], pal5[bg], tp)]
             p.fill(x, y + 16, 48, 12, mix)
-            ss.add(x, y, ri, mgx=48, mgy=16, tp=tp, ps=1 + ri * 4 + tp)
+            ss.add(x, y, ri, mgx=48, mgy=16, tp=tp, ps=(1 + ri * 4 + tp) % 16)
     for tp in range(4):
         p.scr.text(16 + tp * 60 + 12, 12, 'TP%d' % tp, 0xFF)
     ss.write()
