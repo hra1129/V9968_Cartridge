@@ -125,39 +125,53 @@ module tb_r23;
 		end
 	endtask
 
-	//	SP3, SVNS=0: Y=1015 (-9), MGY=16 must be selected for display line 0 (selection line -1).
-	task automatic run_sp3_top(input [7:0] r23, input [8:0] expected_pos_y, input [4:0] expected_count);
+	//	SP3 selection of one sprite (MGY=16) at sprite Y=y on a line at screen_y / background ring Y=pix_y.
+	task automatic run_sp3_select(input bit nonR23, input [9:0] y, input [9:0] screen_y, input [7:0] pix_y,
+								  input [8:0] expected_pos_y, input [4:0] expected_count);
 		integer i, phase;
 		begin
 			@(negedge clk);
 			reset_n = 1'b0;
 			interleave = 1'b0;
-			sprite_nonR23_mode = 1'b0;
+			sprite_nonR23_mode = nonR23;
 			sprite_mode3 = 1'b1;
 			screen_pos_x = 14'd0;
 			screen_pos_y = 10'h3FF;
-			pixel_pos_y = 8'hFF + r23;
+			pixel_pos_y = pix_y;
 			for (i = 0; i < 32; i = i + 1) attributes[i] = 32'h000000D8;
-			attributes[0] = {8'h00, 8'd16, 8'h03, 8'hF7};
+			attributes[0] = {8'h00, 8'd16, 6'd0, y};
 			repeat (4) @(negedge clk);
 			reset_n = 1'b1;
 			step(14'h3DFF);
+			screen_pos_y = screen_y;
 			step(14'h3FFF);
 			for (phase = 0; phase < 16 * 276; phase = phase + 1) step(phase);
 			if (u_dut.u_select_visible_planes.selected_pixel_pos_y !== expected_pos_y)
-				$fatal(1, "SP3 line -1 Y expected %h, got %h (R#23=%0d)",
-					expected_pos_y, u_dut.u_select_visible_planes.selected_pixel_pos_y, r23);
+				$fatal(1, "SP3 line Y expected %h, got %h (SVNS=%b Y=%0d)",
+					expected_pos_y, u_dut.u_select_visible_planes.selected_pixel_pos_y, nonR23, y);
 			if (u_dut.w_selected_count !== expected_count)
-				$fatal(1, "SP3 Y=-9 expected %0d selected sprites, got %0d (R#23=%0d)",
-					expected_count, u_dut.w_selected_count, r23);
+				$fatal(1, "SP3 expected %0d selected sprites, got %0d (SVNS=%b Y=%0d screen_y=%0d pixel_y=%0d)",
+					expected_count, u_dut.w_selected_count, nonR23, y, $signed(screen_y), pix_y);
 			sprite_mode3 = 1'b0;
+			sprite_nonR23_mode = 1'b0;
 		end
 	endtask
 
 	initial begin
-		run_sp3_top(8'd0, 9'h1FF, 5'd1);
-		run_sp3_top(8'd1, 9'h000, 5'd1);
-		run_sp3_top(8'd20, 9'h013, 5'd0);
+		//	SVNS=0, Y=1015 (-9) at selection line -1 for display line 0: R#23=0/1 select it, R#23=20 does not.
+		run_sp3_select(1'b0, 10'h3F7, 10'h3FF, 8'hFF, 9'h0FF, 5'd1);
+		run_sp3_select(1'b0, 10'h3F7, 10'h3FF, 8'h00, 9'h000, 5'd1);
+		run_sp3_select(1'b0, 10'h3F7, 10'h3FF, 8'h13, 9'h013, 5'd0);
+		//	SVNS=0 wraps at the background ring seam (pixel Y 255 -> 0) like SP1/2.
+		run_sp3_select(1'b0, 10'h0FA, 10'd100, 8'h02, 9'h002, 5'd1);
+		run_sp3_select(1'b0, 10'h3FA, 10'd100, 8'h04, 9'h004, 5'd1);
+		run_sp3_select(1'b0, 10'h0FA, 10'd100, 8'h0A, 9'h00A, 5'd0);
+		//	Y=256...767 is off the ring and never displayed.
+		run_sp3_select(1'b0, 10'h10A, 10'd100, 8'h0C, 9'h00C, 5'd0);
+		run_sp3_select(1'b0, 10'h2FA, 10'd100, 8'h02, 9'h002, 5'd0);
+		//	SVNS=1 keeps the signed screen coordinate without wrap.
+		run_sp3_select(1'b1, 10'h0FA, 10'd2, 8'h02, 9'h002, 5'd0);
+		run_sp3_select(1'b1, 10'h3F7, 10'h3FF, 8'hFF, 9'h1FF, 5'd1);
 		run_case(1'b0, 1'b0);
 		run_case(1'b1, 1'b0);
 		run_case(1'b0, 1'b1);

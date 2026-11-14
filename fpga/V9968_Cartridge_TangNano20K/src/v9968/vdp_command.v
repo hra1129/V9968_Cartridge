@@ -239,6 +239,9 @@ module vdp_command (
 	wire		[17:0]	w_address_d;
 	wire		[7:0]	w_color_mask;
 	wire		[17:0]	w_font_address;
+	wire		[10:0]	w_lfmm_font_advance_wrap;
+	wire		[11:0]	w_lfmm_font_advance;
+	wire				w_lfmm_y_end;
 	wire		[12:0]	w_next_nyb;
 	wire		[11:0]	w_nyb_shift;
 	wire		[11:0]	w_nyb_mask;
@@ -378,6 +381,11 @@ module vdp_command (
 	assign w_address_d			= vram_interleave ? { w_address_d_lim[17], w_address_d_lim[0], w_address_d_lim[16:1] }: w_address_d_lim;
 	//	The font address is a CPU-view address, so it is interleaved in the same way as the CPU access
 	assign w_font_address		= vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address;
+	assign w_lfmm_y_end			= w_ny_end || w_dy_overflow;
+	assign w_lfmm_font_advance_wrap = reg_ny - ff_ny + 11'd1;
+	assign w_lfmm_font_advance	= reg_vram256k_mode ?
+								  (w_lfmm_font_advance_wrap == 11'd0 ? 12'd2048 : {1'b0, w_lfmm_font_advance_wrap}) :
+								  (w_lfmm_font_advance_wrap[9:0] == 10'd0 ? 12'd1024 : {2'b0, w_lfmm_font_advance_wrap[9:0]});
 
 	// --------------------------------------------------------------------
 	//	Command complete interrupt
@@ -438,7 +446,13 @@ module vdp_command (
 			//	hold
 		end
 		else if( ff_count_valid && (ff_bit_count == 3'd0 || (ff_command == c_lfmm && w_dx_overflow)) ) begin
-			ff_font_address	<= ff_font_address + 18'd1;
+			// Skip the invisible font rows when an LFMM character reaches Y=0.
+			if( ff_command == c_lfmm && w_dy_overflow && !w_ny_end ) begin
+				ff_font_address <= ff_font_address + { 6'd0, w_lfmm_font_advance };
+			end
+			else begin
+				ff_font_address	<= ff_font_address + 18'd1;
+			end
 		end
 	end
 
@@ -603,7 +617,7 @@ module vdp_command (
 			reg_dx[8]	<= register_data[0];
 		end
 		else if( ff_command == c_lfmm ) begin
-			if( ff_count_valid && ff_bit_count == 3'd0 && w_ny_end ) begin
+			if( ff_count_valid && ff_bit_count == 3'd0 && w_lfmm_y_end ) begin
 				reg_dx	<= w_next_dx[8:0];
 			end
 			else begin
@@ -638,7 +652,7 @@ module vdp_command (
 				end
 			end
 			else if( ff_command == c_lfmm ) begin
-				if( (ff_bit_count == 3'd0 && !w_ny_end) || w_dx_overflow ) begin
+				if( (ff_bit_count == 3'd0 && !w_lfmm_y_end) || w_dx_overflow ) begin
 					ff_dx <= reg_dx;
 					ff_bit_count <= 3'd7;
 				end
@@ -711,7 +725,7 @@ module vdp_command (
 			end
 			else if( ff_command == c_lfmm ) begin
 				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
-					if( w_ny_end ) begin
+					if( w_lfmm_y_end ) begin
 						ff_dy <= ff_sy2[18:8];
 					end
 					else begin
@@ -858,7 +872,7 @@ module vdp_command (
 			end
 			else if( ff_command == c_lfmm ) begin
 				// NX counts characters: advance once per character, after its last row and last bit.
-				if( ff_bit_count == 3'd0 && w_ny_end ) begin
+				if( ff_bit_count == 3'd0 && w_lfmm_y_end ) begin
 					ff_nx <= ff_nx + 11'd1;
 				end
 			end
@@ -935,7 +949,7 @@ module vdp_command (
 			if( ff_command == c_lfmm ) begin
 				// The screen edge ends the character row as well as its eighth bit.
 				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
-					if( w_ny_end ) begin
+					if( w_lfmm_y_end ) begin
 						ff_ny <= 11'd1;
 					end
 					else begin

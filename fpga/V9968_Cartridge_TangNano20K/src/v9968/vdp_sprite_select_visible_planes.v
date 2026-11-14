@@ -101,7 +101,8 @@ module vdp_sprite_select_visible_planes (
 	wire		[2:0]	w_phase;
 	wire		[3:0]	w_sub_phase;
 	wire		[8:0]	w_pixel_pos_y;
-	wire				w_pixel_pos_y_negative;
+	wire				w_y_out_of_ring;
+	wire		[9:0]	w_offset_y3;
 	reg			[8:0]	ff_pixel_pos_y;
 	reg			[5:0]	ff_plane_count;
 	reg			[5:0]	ff_current_plane_num;		//	Plane#0...#63
@@ -318,13 +319,9 @@ module vdp_sprite_select_visible_planes (
 			ff_pixel_pos_y <= 9'd0;
 		end
 		else if( screen_pos_x == 14'h3FFF ) begin
-			ff_pixel_pos_y <= reg_sprite_nonR23_mode ? screen_pos_y : { w_pixel_pos_y_negative, pixel_pos_y };
+			ff_pixel_pos_y <= reg_sprite_nonR23_mode ? screen_pos_y : { 1'b0, pixel_pos_y };
 		end
 	end
-
-	//	SP3 の 10bit Y 判定用: 画面上端より上 (screen_pos_y < 0) で R#23 を加えても桁上がりしない場合は
-	//	負の座標として扱う (例: R#23=0 のライン -1 は 255 ではなく -1)
-	assign w_pixel_pos_y_negative	= reg_sprite_mode3 && screen_pos_y[8] && (pixel_pos_y >= screen_pos_y[7:0]);
 
 	assign w_pixel_pos_y	= ff_pixel_pos_y;
 	assign selected_pixel_pos_y	= ff_pixel_pos_y;
@@ -333,7 +330,12 @@ module vdp_sprite_select_visible_planes (
 
 	assign w_invisible12	= (!reg_sprite_16x16 && !reg_sprite_magify) ?   w_offset_y[7:3]        : 
 	                  		  (!reg_sprite_16x16 || !reg_sprite_magify) ? { w_offset_y[7:4], 1'd0 }: { w_offset_y[7:5], 2'd0 };
-	assign w_invisible3		= (w_mgy == 8'd0) ? (w_offset_y[9:8] != 2'd0): ( { 2'd0, w_mgy } <= w_offset_y );
+	//	SVNS=0: sprites follow the 256-line background ring, so the offset wraps at 256 like SP1/2.
+	//	Only Y = -256...255 is on the ring; Y = 256...767 is never displayed.
+	assign w_y_out_of_ring	= !reg_sprite_nonR23_mode && (w_y[9] != w_y[8]);
+	assign w_offset_y3		= reg_sprite_nonR23_mode ? w_offset_y : { 2'd0, w_offset_y[7:0] };
+	assign w_invisible3		= w_y_out_of_ring ||
+							  ((w_mgy == 8'd0) ? (w_offset_y3[9:8] != 2'd0): ( { 2'd0, w_mgy } <= w_offset_y3 ));
 	assign w_invisible		= reg_sprite_mode3 ? w_invisible3: (w_invisible12 != 5'd0);
 
 	always @( posedge clk ) begin

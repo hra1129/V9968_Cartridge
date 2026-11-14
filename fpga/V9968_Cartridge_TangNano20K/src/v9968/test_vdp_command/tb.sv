@@ -9,6 +9,7 @@ module tb;
 	reg read_color = 1'b0;
 	reg [9:0] screen_mode = 10'h008;
 	reg vram_interleave = 1'b0;
+	reg vram256k_mode = 1'b0;
 	reg hold_memory = 1'b0;
 	wire [17:0] cache_address;
 	wire cache_valid;
@@ -23,6 +24,7 @@ module tb;
 	wire transfer_ready;
 	wire [7:0] status_color;
 	reg [7:0] memory [0:262143];
+	reg [7:0] expected_memory [0:262143];
 	reg [7:0] pending_data;
 	reg [2:0] pending_cycles;
 	reg test_passed = 1'b0;
@@ -45,7 +47,7 @@ module tb;
 		.reg_yjk_mode(1'b0), .vram_interleave(vram_interleave),
 		.reg_text_back_color(8'd0), .reg_command_enable(1'b1),
 		.reg_command_high_speed_mode(1'b1), .reg_ext_command_mode(1'b1),
-		.reg_vram256k_mode(1'b0), .vram_access_mask(), .intr_command_end()
+		.reg_vram256k_mode(vram256k_mode), .vram_access_mask(), .intr_command_end()
 	);
 
 	always @(posedge clk) begin
@@ -89,6 +91,7 @@ module tb;
 			reset_n = 1'b0;
 			screen_mode = mode;
 			vram_interleave = interleave;
+			vram256k_mode = 1'b0;
 			register_write = 1'b0;
 			read_color = 1'b0;
 			hold_memory = 1'b0;
@@ -275,6 +278,73 @@ module tb;
 		end
 	endtask
 
+	function automatic [7:0] lfmm_font(input integer index);
+		lfmm_font = ((index * 53 + 156) ^ ((index >> 8) * 29)) & 8'hFF;
+	endfunction
+
+	task automatic test_lfmm_top_clip(
+		input [9:0] mode, input bit interleave, input bit fg4, input bit dix, input bit vram256k,
+		input integer dx, input integer dy, input integer ny
+	);
+		integer i, c, row, bit_index, x, y, bpp, stride, width, height;
+		integer a, shift, mask, pixel, font_base;
+		reg [7:0] font_row;
+		begin
+			reset_case(mode, interleave);
+			vram256k_mode = vram256k;
+			bpp = (!fg4 && mode == 10'h010) ? 2 : 4;
+			stride = (!fg4 && mode == 10'h020) ? 256 : 128;
+			width = (!fg4 && (mode == 10'h010 || mode == 10'h020)) ? 512 : 256;
+			height = (ny == 0) ? (vram256k ? 2048 : 1024) : ny;
+			font_base = vram256k ? 18'h20000 : 18'h10000;
+			for (i = 0; i < 262144; i = i + 1) begin
+				memory[i] = 8'h55;
+				expected_memory[i] = 8'h55;
+			end
+			for (i = 0; i < 2 * height; i = i + 1) begin
+				memory[physical_address(font_base + i)] = lfmm_font(i);
+				expected_memory[physical_address(font_base + i)] = lfmm_font(i);
+			end
+			for (c = 0; c < 2; c = c + 1) begin
+				for (row = 0; row <= dy && row < height; row = row + 1) begin
+					y = dy - row;
+					font_row = lfmm_font(c * height + row);
+					for (bit_index = 0; bit_index < 8; bit_index = bit_index + 1) begin
+						x = dix ? dx - c * 8 - bit_index : dx + c * 8 + bit_index;
+						if (x >= 0 && x < width) begin
+							a = physical_address(y * stride + x / (8 / bpp));
+							shift = (8 / bpp - 1 - x % (8 / bpp)) * bpp;
+							mask = ((1 << bpp) - 1) << shift;
+							pixel = font_row[7 - bit_index] ? (1 << bpp) - 1 : 0;
+							expected_memory[a] = (expected_memory[a] & ~mask) | (pixel << shift);
+						end
+					end
+				end
+			end
+
+			write_reg(6'd32, 8'h00);
+			write_reg(6'd33, 8'h00);
+			write_reg(6'd34, vram256k ? 8'h02 : 8'h01);
+			write_reg(6'd35, 8'h00);
+			set_destination(dx);
+			write_reg(6'd38, dy);
+			set_size(9'd2);
+			write_reg(6'd42, ny[7:0]);
+			write_reg(6'd43, ny[10:8]);
+			write_reg(6'd44, 8'h0F);
+			write_reg(6'd45, (fg4 ? 8'h80 : 8'h00) | 8'h08 | (dix ? 8'h04 : 8'h00));
+			write_reg(6'd46, 8'h10);
+			wait_command_end();
+
+			for (i = 0; i < 262144; i = i + 1) begin
+				if (memory[i] !== expected_memory[i])
+					$fatal(1, "LFMM top clip: mode=%h fg4=%b dix=%b vram256k=%b ny=%0d addr=%h got=%h expected=%h",
+						   mode, fg4, dix, vram256k, ny, i, memory[i], expected_memory[i]);
+			end
+			$display("LFMM top clip mode=%h fg4=%b dix=%b vram256k=%b ny=%0d passed", mode, fg4, dix, vram256k, ny);
+		end
+	endtask
+
 	initial begin
 		test_fg4(10'h001, 1'b0);
 		test_fg4(10'h002, 1'b0);
@@ -357,6 +427,14 @@ module tb;
 		read_lmcm_pixel(8'h08);
 		wait_command_end();
 		$display("LMCM TR=1 start: F1234567 and final pixel 8 passed");
+
+		test_lfmm_top_clip(10'h008, 1'b0, 1'b0, 1'b0, 1'b1, 5, 1, 4);
+		test_lfmm_top_clip(10'h010, 1'b0, 1'b0, 1'b1, 1'b1, 12, 0, 4);
+		test_lfmm_top_clip(10'h020, 1'b1, 1'b0, 1'b0, 1'b1, 5, 1, 4);
+		test_lfmm_top_clip(10'h020, 1'b1, 1'b1, 1'b0, 1'b1, 5, 0, 0);
+		test_lfmm_top_clip(10'h008, 1'b0, 1'b0, 1'b0, 1'b0, 5, 1, 4);
+		test_lfmm_top_clip(10'h008, 1'b0, 1'b0, 1'b0, 1'b0, 5, 0, 0);
+		test_lfmm_top_clip(10'h020, 1'b1, 1'b0, 1'b0, 1'b0, 5, 1, 0);
 
 		test_passed = 1'b1;
 		$display("VDP command tests PASSED");

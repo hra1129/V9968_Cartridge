@@ -313,6 +313,7 @@ class Page:
         self.base_image = None
         self.fills = []
         self.fill_ref = None
+        self.post_cmds = []
 
     def fill(self, x, y, w, h, c):
         """Box (256 dot units) drawn by HMMV before the VRAM data."""
@@ -374,6 +375,8 @@ class Page:
             out += vram_ops(self.scr.vram, self.fill_ref.vram)
         else:
             out += vram_ops(self.scr.vram)
+        for c in self.post_cmds:
+            out += [OP_CMD] + c
         out += [OP_REG, 1, self.r1]
         out += self.show
         return out
@@ -848,6 +851,7 @@ def main():
         build_v9968_pages()
     build_yjk_pages()
     build_sc8_sp3_page()
+    build_sp3_seam_page()
     total = write_inc(os.path.join(HERE, 'VDPVIEW.INC'))
     for i, p in enumerate(PAGES):
         print('%2d %-28s %6d bytes' % (i + 1, p.title, p.size))
@@ -917,15 +921,22 @@ class SpriteSet3:
                                 x & 255, x >> 8, s.mgx & 255, s.tile])
         v[self.attr + len(self.sprites) * 8] = 216
 
-    def render(self):
-        """(x, y) -> (palette number, tp) of the top most plane."""
+    def render(self, r23=None):
+        """(x, y) -> (palette number, tp) of the top most plane.
+        r23: SVNS=0 model with vertical scroll (256 line ring, Y = -256..255)."""
         out = {}
         for s in self.sprites:
             mgy = s.mgy or 256
             mgx = s.mgx or 256
             rows = self.tiles[s.tile]
+            ay = (s.y - 1) & 1023
+            if r23 is not None and (ay >> 9) != ((ay >> 8) & 1):
+                continue
             for line in range(self.page.lines):
-                off = (line - s.y) & 1023
+                if r23 is None:
+                    off = (line - s.y) & 1023
+                else:
+                    off = (line + r23 - s.y) & 255
                 if off >= mgy:
                     continue
                 r = off * 16 // mgy
@@ -966,7 +977,7 @@ def blend5(sp, bg, tp):
                  for s5, b5 in zip(sp, bg))
 
 
-def expect_image(p, pal5, sprites):
+def expect_image(p, pal5, sprites, r23=0):
     """Expected display (640x480 like the openMSX shots) from the page model.
     pal5: 5 bit RGB palette; sprites: (x, y) -> (palette number, tp)."""
     from PIL import Image
@@ -975,12 +986,13 @@ def expect_image(p, pal5, sprites):
     top = (240 - p.lines) // 2
     v = p.scr.vram
     for y in range(p.lines):
+        vy = (y + r23) & 255
         for x in range(256):
             if p.mode == 'G4':
-                b = v[y * 128 + (x >> 1)]
+                b = v[vy * 128 + (x >> 1)]
                 c = (b & 15) if x & 1 else (b >> 4)
             else:
-                c = v[y * 256 + x]
+                c = v[vy * 256 + x]
             rgb = pal5[c]
             if (x, y) in sprites:
                 pn, tp = sprites[(x, y)]
@@ -1146,6 +1158,49 @@ def build_sc8_sp3_page():
     p.expect = lambda p=p, pal=pal5, sp=spx: expect_image(p, pal, sp)
     p.doc = ('V9968: SCREEN 8（EPAL=0）+ スプライトモード3。固定16色（パレットセット指定は無視）と、'
              'GRB332 背景との半透明 TP0〜3')
+
+
+def build_sp3_seam_page():
+    # SCREEN 5 + sprite mode 3, SVNS=0, R#23=100: sprites follow the 256 line
+    # background ring across the seam (VRAM line 255 -> 0 at screen line 156).
+    # Y (attribute) = 256..767 is hidden.
+    r23 = 100
+    p = page('V9968 SC5 SP3 SCROLL SEAM', 'G4', v9968=True)
+    p.r20 = 0x08
+    p.r7 = 0
+    # attribute table at 2000h (VRAM line 64, outside the visible lines 100-255, 0-55)
+    p.regs = [(0, 0x06), (2, 0x1F), (5, 0x47), (11, 0x00), (6, 0x20)]
+    p.extra_regs = [(23, r23)]
+    p.fill(0, 0, 256, 56, 4)
+    ss = SpriteSet3(p, 0x2000)
+    ss.tile(0, shape_tile(15))
+    ss.tile(1, color_tile())
+    ss.tile(2, [[RED] * 16 for _ in range(16)])
+    for x, y, t in [(16, 250, 0), (40, -6, 0), (80, 245, 1), (104, -11, 1),
+                    (144, 255, 0), (168, 0, 1)]:
+        ss.add(x, y, t)
+        # swatch: HMMM from the tile sheet after the VRAM data is written
+        sy = (SpriteSet3.SHEET >> 7) + (t >> 4) * 16
+        p.post_cmds.append([(t & 15) * 16, 0, sy & 0xFF, sy >> 8, x, 0, 196, 0,
+                            16, 0, 16, 0, 0, 0, 0xD0])
+        for r in range(16):
+            for c in range(16):
+                for scr in (p.scr, p.fill_ref):
+                    scr.dot(x + c, 196 + r, ss.tiles[t][r][c])
+    # attribute Y = 386 / 642 / 767 / 265: hidden (out of -256..255)
+    ss.add(40, 387, 2)
+    ss.add(88, 643, 2)
+    ss.add(216, 768, 2)
+    ss.add(232, 266, 2)
+    ss.write()
+    sp = ss.render(r23)
+    p.scr.text(8, (r23 + 2) & 255, 'V9968 SP3 SEAM', 11)
+    p.scr.text(200, (r23 + 104) & 255, 'SWATCH', 15)
+    p.scr.text(200, 4, 'SEAM', 15)
+    pal = [msx_to5(MSX2_PALETTE[i]) for i in range(16)]
+    p.expect = lambda p=p, pal=pal, sp=sp: expect_image(p, pal, sp, r23)
+    p.doc = ('V9968: SCREEN 5 + スプライトモード3、SVNS=0、R#23=100。背景の周回の継ぎ目'
+             '（VRAM ライン255→0、画面ライン156）をまたぐスプライトが途切れず、Y=256〜767 のスプライトは表示されない')
 
 
 if __name__ == '__main__':

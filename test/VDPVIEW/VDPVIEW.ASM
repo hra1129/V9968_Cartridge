@@ -13,6 +13,7 @@
 ; -----------------------------------------------------------------------------
 
 BDOS		:= 0x0005
+TPA_TOP		:= 0x0006
 _TERM0		:= 0x00
 _PUTS		:= 0x09
 
@@ -55,6 +56,17 @@ entry_point::
 		ld		de, msg_banner
 		call	puts
 
+		ld		hl, program_end
+		ld		a, h
+		add		a, 2			; 1 page margin for the stack
+		ld		b, a
+		ld		a, [TPA_TOP + 1]
+		cp		a, b
+		jr		nc, tpa_ok
+		ld		de, msg_tpa
+		call	puts
+		jp		exit_dos
+tpa_ok:
 		di
 		call	detect_vdp
 		ei
@@ -778,6 +790,8 @@ msg_v9938:
 		db		"V9938 detected. V9958 or V9968 is required.", 0x0D, 0x0A, "$"
 msg_end:
 		db		"VDPVIEW END", 0x0D, 0x0A, "$"
+msg_tpa:
+		db		"Not enough TPA.", 0x0D, 0x0A, "$"
 
 ; -----------------------------------------------------------------------------
 ;	work area
