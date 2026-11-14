@@ -235,6 +235,7 @@ module vdp_command (
 	wire		[17:0]	w_address_d_pre;
 	wire		[17:0]	w_address_s;
 	wire		[17:0]	w_address_d;
+	wire		[17:0]	w_font_address;
 	wire		[12:0]	w_next_nyb;
 	wire		[9:0]	w_next;
 	wire		[11:0]	w_next_sx;
@@ -364,6 +365,8 @@ module vdp_command (
 
 	assign w_address_s			= vram_interleave ? { w_address_s_pre[17], w_address_s_pre[0], w_address_s_pre[16:1] }: w_address_s_pre;
 	assign w_address_d			= vram_interleave ? { w_address_d_pre[17], w_address_d_pre[0], w_address_d_pre[16:1] }: w_address_d_pre;
+	//	The font address is a CPU-view address, so it is interleaved in the same way as the CPU access
+	assign w_font_address		= vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address;
 
 	// --------------------------------------------------------------------
 	//	Command complete interrupt
@@ -1857,7 +1860,7 @@ module vdp_command (
 			//	LFMM command --------------------------------------------------
 			c_state_lfmm: begin
 				//	Read the location of ff_font_address
-				ff_cache_vram_address	<= ff_font_address;
+				ff_cache_vram_address	<= w_font_address;
 				ff_cache_vram_valid		<= 1'b1;
 				ff_cache_vram_write		<= 1'b0;
 				ff_state				<= c_state_wait_rdata_en;

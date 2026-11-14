@@ -61,15 +61,19 @@ module tb ();
 	wire		[11:0]	h_count;
 	wire		[ 9:0]	v_count;
 	wire		[13:0]	screen_pos_x;
+	wire		[13:0]	screen_pos_x_clone;
 	wire		[ 9:0]	screen_pos_y;
 	wire		[ 8:0]	pixel_pos_x;
 	wire		[ 7:0]	pixel_pos_y;
 	wire				screen_v_active;
+	wire				sprite_overmap_v_active;
 
 	wire				intr_line;				//	pulse
 	wire				intr_frame;				//	pulse
+	wire				clear_line_interrupt;	//	pulse
 	wire				pre_vram_refresh;
 
+	reg					reg_display_on;
 	reg					reg_50hz_mode;
 	reg					reg_212lines_mode;
 	reg					reg_interlace_mode;
@@ -79,12 +83,16 @@ module tb ();
 	reg			[2:0]	reg_horizontal_offset_l;
 	reg			[8:3]	reg_horizontal_offset_h;
 	reg					reg_interleaving_mode;
+	reg					reg_flat_interlace_mode;
 	reg			[7:0]	reg_blink_period;
 	reg					reg_interrupt_line_nonR23_mode;
 	wire		[2:0]	horizontal_offset_l;
 	wire		[8:3]	horizontal_offset_h;
 	wire				interleaving_page;
 	wire				blink;
+	wire				status_field;
+	wire				status_hsync;
+	wire				status_vsync;
 
 	// --------------------------------------------------------------------
 	//	DUT
@@ -105,6 +113,7 @@ module tb ();
 		clk = 0;
 		reset_n = 0;
 
+		reg_display_on = 1;
 		reg_50hz_mode = 0;
 		reg_212lines_mode = 0;
 		reg_interlace_mode = 0;
@@ -114,6 +123,7 @@ module tb ();
 		reg_horizontal_offset_l = 0;
 		reg_horizontal_offset_h = 0;
 		reg_interleaving_mode = 0;
+		reg_flat_interlace_mode = 0;
 		reg_blink_period = 0;
 		reg_interrupt_line_nonR23_mode = 0;
 
