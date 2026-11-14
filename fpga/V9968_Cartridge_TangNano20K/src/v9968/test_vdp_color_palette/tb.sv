@@ -12,6 +12,7 @@ module tb;
 	reg [4:0] palette_b = 5'd0;
 	reg [7:0] bg_color = 8'd0;
 	reg bg_en = 1'b1;
+	reg bg_border = 1'b0;
 	reg [7:0] sprite_color = 8'd5;
 	reg [1:0] sprite_transparent = 2'd0;
 	reg sprite_en = 1'b0;
@@ -36,6 +37,7 @@ module tb;
 		.palette_valid(palette_valid), .palette_num(palette_num),
 		.palette_r(palette_r), .palette_g(palette_g), .palette_b(palette_b),
 		.display_color_screen_mode(bg_color), .display_color_screen_mode_en(bg_en),
+		.display_color_screen_mode_border(bg_border),
 		.display_color_sprite(sprite_color), .display_color_sprite_transparent(sprite_transparent),
 		.display_color_sprite_en(sprite_en), .vdp_r(vdp_r), .vdp_g(vdp_g), .vdp_b(vdp_b),
 		.reg_screen_mode(screen_mode), .reg_yjk_mode(yjk_mode), .reg_yae_mode(yae_mode),
@@ -104,9 +106,6 @@ module tb;
 						else
 							expected = color_history[sprite_index] == 8'd5 ? 24'hFF0000 : 24'h00FF00;
 					end
-					// Preserve the existing SCREEN12 backdrop path in this sprite regression.
-					else if (!bg_history[bg_index] && use_yjk && !use_yae)
-						expected = 24'h404052;
 					else if (!bg_history[bg_index] || palette_history[bg_index])
 						expected = 24'h0000FF;
 				end
@@ -201,6 +200,23 @@ module tb;
 		write_palette(8'd1, 5'd31, 5'd0, 5'd0);
 		patterned_hires_pixels(1'b1);
 		patterned_hires_pixels(1'b0);
+
+		// Border pixels in YJK modes: screen_mode outputs R#7 (8'h03) with en=1.
+		// V9958 shows palette R#7[3:0] for SCREEN10/11/12, not the YJK/YAE decode of R#7.
+		screen_mode = 5'b11100;
+		ext_palette = 1'b0;
+		sprite_mode3 = 1'b0;
+		sprite_transparent = 2'd0;
+		sprite_en = 1'b0;
+		bg_en = 1'b1;
+		bg_border = 1'b1;
+		bg_color = 8'h03;
+		yjk_mode = 1'b1;
+		yae_mode = 1'b1;
+		solid_pixels(24'h0000FF);
+		yae_mode = 1'b0;
+		solid_pixels(24'h0000FF);
+		bg_border = 1'b0;
 
 		test_passed = 1'b1;
 		$display("VDP palette YJK, sprite alignment, masking, and blend tests PASSED");

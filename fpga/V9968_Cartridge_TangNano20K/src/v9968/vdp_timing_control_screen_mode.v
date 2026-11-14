@@ -73,6 +73,7 @@ module vdp_timing_control_screen_mode (
 
 	output		[7:0]	display_color,
 	output				display_color_en,
+	output				display_color_border,
 	output				sprite_off,
 	input				interleaving_page,
 	input				blink,
@@ -162,6 +163,7 @@ module vdp_timing_control_screen_mode (
 	//	Display color
 	reg			[7:0]	ff_display_color;
 	reg					ff_display_color_en;
+	reg					ff_display_color_border;
 	wire		[7:0]	w_backdrop_color;
 	wire		[3:0]	w_text_fg2;
 	wire		[3:0]	w_text_fg3;
@@ -786,6 +788,8 @@ module vdp_timing_control_screen_mode (
 			ff_display_color <= w_out_color;
 			ff_display_color_en	= reg_display_on & w_left_mask & !w_r27_mask;
 			ff_dot_r27_mask		<= w_r27_mask;
+			//	Border pixel (R#7 output as display_color). YJK modes need this to select the palette backdrop.
+			ff_display_color_border	<= !ff_pattern_valid;
 		end
 		else begin
 			//	hold
@@ -795,4 +799,5 @@ module vdp_timing_control_screen_mode (
 	//	phase 6 のタイミングが 8dot/state の起点
 	assign display_color		= ff_display_color;
 	assign display_color_en		= ff_display_color_en;
+	assign display_color_border	= ff_display_color_border;
 endmodule

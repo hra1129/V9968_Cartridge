@@ -70,6 +70,7 @@ module vdp_color_palette (
 
 	input		[7:0]	display_color_screen_mode,
 	input				display_color_screen_mode_en,
+	input				display_color_screen_mode_border,
 	input		[7:0]	display_color_sprite,
 	input		[1:0]	display_color_sprite_transparent,
 	input				display_color_sprite_en,
@@ -242,7 +243,7 @@ module vdp_color_palette (
 			end
 			else if( !reg_yae_mode ) begin
 				//	SCREEN12 の場合
-				if( display_color_screen_mode_en ) begin
+				if( display_color_screen_mode_en && !display_color_screen_mode_border ) begin
 					//	映像期間
 					ff_display_color_delay0 <= { 1'b0, display_color_screen_mode };
 				end
@@ -262,7 +263,7 @@ module vdp_color_palette (
 			end
 			else begin
 				//	SCREEN10/11 の場合
-				if( display_color_screen_mode_en ) begin
+				if( display_color_screen_mode_en && !display_color_screen_mode_border ) begin
 					//	映像期間
 					ff_display_color_delay0 <= { display_color_screen_mode[3], display_color_screen_mode[7:4], 1'b0, display_color_screen_mode[2:0] };
 				end
@@ -422,8 +423,8 @@ module vdp_color_palette (
 					ff_display_color	<= w_display_color[8] ? w_display_color[7:0] : reg_backdrop_color;
 					ff_display_color_oe	<= 1'b1;
 				end
-				else if( reg_yjk_mode && reg_yae_mode && w_display_color[8] ) begin
-					//	SCREEN10/11 の A=1 画素と周辺色は、上位4bit をパレット番号とする
+				else if( reg_yjk_mode && w_display_color[8] ) begin
+					//	SCREEN10/11 の A=1 画素と、SCREEN10/11/12 の周辺色は、上位4bit をパレット番号とする
 					ff_display_color	<= { 4'd0, w_display_color[7:4] };
 					ff_display_color_oe	<= 1'b1;
 				end
@@ -638,7 +639,8 @@ module vdp_color_palette (
 	assign w_display_g_pre = (!reg_ext_palette_mode && w_256colors_mode && !reg_yjk_mode) ? { ff_display_color256[7:5], ff_display_color256[7:6] } : ff_display_g16;
 	assign w_display_b_pre = (!reg_ext_palette_mode && w_256colors_mode && !reg_yjk_mode) ? { ff_display_color256[1:0], ff_display_color256[1] & ff_display_color256[0], ff_display_color256[1:0] } : ff_display_b16;
 
-	assign w_yjk_background = reg_yjk_mode && (!reg_yae_mode || !ff_yjk_rgb_en);
+	//	bit8=1 (SCREEN10/11 の A=1 画素、または周辺色) はパレット、それ以外は YJK
+	assign w_yjk_background = reg_yjk_mode && !ff_yjk_rgb_en;
 	assign w_display_r = (w_yjk_background && !w_display_color_sprite_en) ? ff_yjk_r : w_display_r_pre;
 	assign w_display_g = (w_yjk_background && !w_display_color_sprite_en) ? ff_yjk_g : w_display_g_pre;
 	assign w_display_b = (w_yjk_background && !w_display_color_sprite_en) ? ff_yjk_b : w_display_b_pre;

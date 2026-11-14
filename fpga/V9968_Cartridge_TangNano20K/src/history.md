@@ -1,3 +1,31 @@
+## 2026-11-14 VDPVIEW・VRAMSTRS を作成し、バスの書き込みデータ取り込みと YJK モードの周辺色を修正
+
+- **VDPVIEW.COM（`test/VDPVIEW/`）目視確認テスト**
+  - `gen_vdpview.py` がページ定義（レジスタ、パレット、VRAM の画像、表示方法）からバイトコード（`VDPVIEW.INC`）と確認手順書 `VDPVIEW.md` を生成する。`VDPVIEW.ASM` のインタプリタがそれを実行する。`build.bat` でビルドする。
+  - 全17ページ。スプライトの端（全モード・拡大）、スプライトの色・TP・CC、SC6/SC8/SC11/SC12 の周辺色、走査線割込みによる周辺色・スクロールの変更、HR/VR のポーリング、V9968 専用（SP3、EPAL）。V9958 では V9968 専用ページを飛ばす。
+  - P01〜P13 は実機 V9958（FS-A1GT）のキャプチャと openMSX の見え方が一致することを確認した。P17（SC12）は後から追加したため、既存のページ番号は変えていない。
+- **VRAMSTRS.COM（`test/VRAMSTRS/`）高負荷テスト**
+  - CPU による VRAM の連続読み書きを、VDP の高負荷状態で繰り返して比較する。`VRAMSTRS [rounds]`、0 は ESC まで。不一致は W（書き込み化け）、R（読み出し化け）、?（不明）に分類して表示する。
+- **バスの書き込みデータ取り込み（`msx_slot/msx_slot.v`）**
+  - SX-2 + V9968 で VRAMSTRS が W エラー（D0/D1 が 1→0 に化ける。データとアドレスの両方）を出した。同期後の /WR が下がってから約35〜46ns でデータを取り込んでおり、データの立ち上がりが遅い本体では間に合わなかった。
+  - /WR が下がってから8クロック（clk85m）待ってからデータを1回だけ取り込むようにした。待つ間も WAIT は出し続ける。
+  - `v9968/test_vram_prefetch_wait` にテスト [10]（D0/D1 が80ns 遅れて立ち上がる書き込み）を追加した。修正前は失敗、修正後は合格。
+  - 実機：VRAMSTRS は3周とも `SUCCESS OF ALL`。VDPVIEW の P04/P08/P09 のランダムな化けも消えた。
+- **SCREEN10/11/12 の周辺色（`vdp_timing_control_screen_mode.v`、`vdp_color_palette.v`）**
+  - 周辺色の領域では、screen_mode が R#7 の8ビットを画素として `display_color_en=1` のまま出している（SCREEN0〜8 はこれで正しい）。palette の YJK 分岐がこれを映像の画素として扱い、SCREEN10/11 では YAE の画素（R7 bit3 で パレット/YJK）として、SCREEN12 では YJK として表示していた。v0.99.2 より前からの不具合。
+  - screen_mode に周辺色の画素を示す `display_color_border`（`!ff_pattern_valid` を sub phase 15 で取り込む）を追加し、palette の YJK 分岐だけで使うようにした。SCREEN0〜8 の経路は変えていない。
+  - SCREEN12 では `w_yjk_background` が YAE=0 のときに常に YJK を選んでいた。bit8（周辺色の印）が立っていればパレットを使うようにし、周辺色は YAE によらず R#7[3:0] のパレット色にした（MSK の領域、表示 OFF も含む）。
+  - `test_vdp_color_palette/tb.sv` の SCREEN12 の周辺色の期待値（YJK として解釈した色 404052）を、正しいパレット色に直した。YJK モードの周辺色の画素のテストを追加した。
+  - 回帰：`test_vdp_color_palette`（tb、tb_screen8_mask）が PASS。`test_top_SCREEN5_LMCM` が PASS。
+- Gowin 1.9.12.03 でビットストリーム生成まで完了。setup の最小 slack は +0.181ns、hold は +0.074ns、違反端点は0。Logic 82%。
+- 変更ファイル: `msx_slot/msx_slot.v`、`v9968/vdp.v`、`v9968/vdp_timing_control.v`、`v9968/vdp_timing_control_screen_mode.v`、`v9968/vdp_color_palette.v`、各テストベンチ、`test/VDPVIEW/*`、`test/VRAMSTRS/*`、`history.md`。
+- コミットはユーザーが行う。
+
+### 次回の作業
+
+- 実機（SX-2 + V9968）で VDPVIEW の P10（SC11）と P17（SC12）の周辺色が期待どおりになったことを確認済み。
+- SP3 で Y=−8 のスプライトのライン0が欠ける不具合（VDPVIEW P14 の上端の赤）を調べる。
+
 ## 2026-11-14 DOS 用自己判定テスト VDPCHK.COM を作成し、見つかった VDP コマンドの不具合7件を修正
 
 v0.99.6 と v0.99.7 がリリースされた。v0.99.7 の内容は、FG4=1 のとき全 VDP コマンドを SCREEN5 と同じ解像度・ビット深度で動かすこと、SP3=0 の LFMM のフォント読み出しを CPU と同じインターリーブ前提にすること、`test_vdp_timing_control_ssg` へのポート追加。

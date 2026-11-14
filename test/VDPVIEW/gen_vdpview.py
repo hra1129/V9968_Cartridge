@@ -739,6 +739,29 @@ def build_color_pages():
     p.doc = 'SCREEN 11（YJK+YAE）の周辺色（R#7 下位4ビットのパレット）とスプライト色（パレット）、YJK グラデーション'
 
 
+# --- pages: YJK (added after the V9968 pages to keep the earlier page numbers) ---
+def build_yjk_pages():
+    # SCREEN 12 (YJK, YAE=0): the border is palette R#7[3:0], never the YJK decode of R#7
+    p = page('SC12 BORDER + SPRITE', 'G7')
+    p.extra_regs = [(25, 0x08)]
+    p.palette = pal_bytes(MSX2_PALETTE)
+    ss = SpriteSet(p, 2, 8, 1)
+    ss.patterns[0] = [0xFF] * 8
+    ents = []
+    for k in range(16):
+        y = 12 + k * 12
+        ents.append((y, [(7, k | ((15 - k) << 4))]))
+        if k:
+            ss.add(0, y + 2, color=k)
+            ss.add(248, y + 2, color=k)
+    ents.append((214, [(7, 0x00)]))
+    line_show(p, ents)
+    ss.write()
+    p.scr.text(24, 2, 'SC12 BORDER/SPRITE', 0xF8)
+    p.scr.text(24, 30, 'NO SEAM AT LEFT/RIGHT', 0xF8)
+    p.doc = 'SCREEN 12（YJK、YAE=0）の周辺色（R#7 下位4ビットのパレット）。画面端のスプライト（パレット色）と比べる'
+
+
 # --- pages: raster -------------------------------------------------------------
 def build_raster_pages():
     # border colour changed by the line interrupt
@@ -823,6 +846,7 @@ def main():
     build_raster_pages()
     if 'build_v9968_pages' in globals():
         build_v9968_pages()
+    build_yjk_pages()
     total = write_inc(os.path.join(HERE, 'VDPVIEW.INC'))
     for i, p in enumerate(PAGES):
         print('%2d %-28s %6d bytes' % (i + 1, p.title, p.size))

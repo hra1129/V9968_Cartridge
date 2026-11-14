@@ -172,6 +172,7 @@ module tb ();
 		.status_hsync								(),
 		.status_vsync								(),
 		.screen_mode_display_color_en				(),
+		.screen_mode_display_color_border			(),
 		.screen_mode								(),
 		.sprite_display_color_transparent			(),
 		.clear_sprite_overmap						( intr_frame ),

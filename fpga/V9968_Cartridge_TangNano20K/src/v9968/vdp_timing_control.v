@@ -79,6 +79,7 @@ module vdp_timing_control (
 	input		[31:0]	screen_mode_vram_rdata,
 	output		[7:0]	screen_mode_display_color,
 	output				screen_mode_display_color_en,
+	output				screen_mode_display_color_border,
 	output		[9:0]	screen_mode,
 
 	output		[17:0]	sprite_vram_address,
@@ -216,6 +217,7 @@ module vdp_timing_control (
 		.vram_interleave							( vram_interleave							),
 		.display_color								( screen_mode_display_color					),
 		.display_color_en							( screen_mode_display_color_en				),
+		.display_color_border						( screen_mode_display_color_border			),
 		.sprite_off									( w_sprite_off								),
 		.interleaving_page							( w_interleaving_page						),
 		.blink										( w_blink									),

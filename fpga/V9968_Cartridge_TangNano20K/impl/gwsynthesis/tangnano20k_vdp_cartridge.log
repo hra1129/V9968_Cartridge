@@ -16,7 +16,7 @@ Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridg
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\system_controller\system_controller.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\tangnano20k_vdp_cartridge.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp.v'
-Undeclared symbol 'w_vram_interleave', assumed default net type 'wire'("C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp.v":365)
+Undeclared symbol 'w_vram_interleave', assumed default net type 'wire'("C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp.v":366)
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_color_palette.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_color_palette_ram.v'
 Analyzing Verilog file 'C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\v9968\vdp_command.v'
