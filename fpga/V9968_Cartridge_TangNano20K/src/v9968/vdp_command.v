@@ -233,10 +233,15 @@ module vdp_command (
 	reg					ff_512pixel;
 	wire		[17:0]	w_address_s_pre;
 	wire		[17:0]	w_address_d_pre;
+	wire		[17:0]	w_address_s_lim;
+	wire		[17:0]	w_address_d_lim;
 	wire		[17:0]	w_address_s;
 	wire		[17:0]	w_address_d;
+	wire		[7:0]	w_color_mask;
 	wire		[17:0]	w_font_address;
 	wire		[12:0]	w_next_nyb;
+	wire		[11:0]	w_nyb_shift;
+	wire		[11:0]	w_nyb_mask;
 	wire		[9:0]	w_next;
 	wire		[11:0]	w_next_sx;
 	wire		[13:0]	w_next_sy;
@@ -321,9 +326,12 @@ module vdp_command (
 		ff_screen_mode_clone	<= screen_mode;
 	end
 
-	assign w_effective_mode		= reg_command_enable || ff_fg4 || (ff_screen_mode[c_g4] || ff_screen_mode[c_g5] || ff_screen_mode[c_g6] || ff_screen_mode[c_g7]);
+	//	As on the V9958, commands outside SCREEN 5-8 run only with R#25 CMD=1 (FG4 does not enable them).
+	assign w_effective_mode		= reg_command_enable || (ff_screen_mode[c_g4] || ff_screen_mode[c_g5] || ff_screen_mode[c_g6] || ff_screen_mode[c_g7]);
 	assign w_bpp				= (ff_fg4 || ff_screen_mode[c_g6] || ff_screen_mode[c_g4]) ? c_bpp_4bit:
 	            				  (ff_screen_mode[c_g5]) ? c_bpp_2bit: c_bpp_8bit;
+	assign w_color_mask			= (w_bpp == c_bpp_4bit) ? 8'h0F:
+	            				  (w_bpp == c_bpp_2bit) ? 8'h03: 8'hFF;
 	assign w_next				= { 7'd0, ff_pixel_step };
 	assign w_512pixel			= !ff_fg4 && (ff_screen_mode_clone[c_g5] || ff_screen_mode_clone[c_g6]);
 	// G7 also covers the YJK modes; only SCREEN 8 uses the optimization.
@@ -363,8 +371,11 @@ module vdp_command (
 	                  			  (ff_screen_mode_clone[c_g6]          ) ? { ff_dy[ 9:0], ff_dx[ 8: 1] }:	// SCREEN7, 256byte/line, 2pixel/byte, 256line * 4page
 	                  			                                           { ff_dy[ 9:0], ff_dx[ 7: 0] };	// SCREEN8, 256byte/line, 1pixel/byte, 256line * 4page
 
-	assign w_address_s			= vram_interleave ? { w_address_s_pre[17], w_address_s_pre[0], w_address_s_pre[16:1] }: w_address_s_pre;
-	assign w_address_d			= vram_interleave ? { w_address_d_pre[17], w_address_d_pre[0], w_address_d_pre[16:1] }: w_address_d_pre;
+	//	With 128KB of VRAM (V58=1) SCREEN 7/8 wrap from Y=511 to Y=0 as on the V9958.
+	assign w_address_s_lim		= { w_address_s_pre[17] & reg_vram256k_mode, w_address_s_pre[16:0] };
+	assign w_address_d_lim		= { w_address_d_pre[17] & reg_vram256k_mode, w_address_d_pre[16:0] };
+	assign w_address_s			= vram_interleave ? { w_address_s_lim[17], w_address_s_lim[0], w_address_s_lim[16:1] }: w_address_s_lim;
+	assign w_address_d			= vram_interleave ? { w_address_d_lim[17], w_address_d_lim[0], w_address_d_lim[16:1] }: w_address_d_lim;
 	//	The font address is a CPU-view address, so it is interleaved in the same way as the CPU access
 	assign w_font_address		= vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address;
 
@@ -942,7 +953,8 @@ module vdp_command (
 	assign w_nx_max		= ff_pixel_step[2] ? { reg_nx[10:2], 2'd0 }:
 	            		  ff_pixel_step[1] ? { reg_nx[10:1], 1'd0 }: reg_nx;
 	assign w_nx_end		= (ff_nx == w_nx_max && ff_command != c_ymmm);
-	assign w_ny_end		= (ff_ny == reg_ny) | w_ny[11] | (w_ny[10] & ~reg_vram256k_mode);
+	//	NY=0 means 1024 lines (2048 in the 256KB mode).
+	assign w_ny_end		= reg_vram256k_mode ? (ff_ny == reg_ny) : (ff_ny[9:0] == reg_ny[9:0]);
 
 	//	LINEコマンドの分子を示すカウンタ
 	assign w_reg_nx		= reg_nx - 11'd1;
@@ -963,14 +975,18 @@ module vdp_command (
 			//	hold
 		end
 		else if( ff_count_valid ) begin
+			//	The V9958 keeps this accumulator in 10 bits, which shapes lines with NY > NX.
 			if( w_line_shift ) begin
-				ff_nyb	<= w_next_nyb[11:0] + { 1'b0, reg_nx };
+				ff_nyb	<= w_nyb_shift & w_nyb_mask;
 			end
 			else begin
-				ff_nyb	<= w_next_nyb[11:0];
+				ff_nyb	<= w_next_nyb[11:0] & w_nyb_mask;
 			end
 		end
 	end
+
+	assign w_nyb_shift	= w_next_nyb[11:0] + { 1'b0, reg_nx };
+	assign w_nyb_mask	= reg_vram256k_mode ? 12'h7FF : 12'h3FF;
 
 	assign w_nx			= ff_nx + { 1'd0, w_next };
 	assign w_next_nyb	= { 1'b0, ff_nyb } - { 2'd0, reg_ny };
@@ -1084,10 +1100,15 @@ module vdp_command (
 			ff_command			<= 4'd0;
 			ff_start			<= 1'b0;
 		end
-		else if( register_write && (register_num == 6'd46) ) begin
+		else if( register_write && (register_num == 6'd46) && w_effective_mode ) begin
 			ff_logical_opration	<= register_data[3:0];
 			ff_command			<= w_geo_hmmv_start ? c_hmmv : register_data[7:4];
 			ff_start			<= 1'b1;
+		end
+		else if( register_write && (register_num == 6'd46) ) begin
+			//	An ignored command still ends a running one, as the V9958 does.
+			ff_command			<= c_stop;
+			ff_start			<= ff_command_execute;
 		end
 		else begin
 			ff_start			<= 1'b0;
@@ -1101,7 +1122,7 @@ module vdp_command (
 		if( !reset_n ) begin
 			ff_pixel_step	<= 3'd1;
 		end
-		else if( register_write && (register_num == 6'd46) ) begin
+		else if( register_write && (register_num == 6'd46) && w_effective_mode ) begin
 			if( register_data[7:6] != 2'b11 || !(ff_screen_mode_clone[c_g4] || ff_screen_mode_clone[c_g5] || ff_screen_mode_clone[c_g6] || ff_fg4) ) begin
 				ff_pixel_step	<= 3'd1;
 			end
@@ -1403,7 +1424,7 @@ module vdp_command (
 
 			c_state_srch_compare: begin
 				//	Compare (SX,SY) and R#44
-				if( (ff_read_pixel == ff_color) == ff_eq ) begin
+				if( (ff_read_pixel == (ff_color & w_color_mask)) == ff_eq ) begin
 					//	Increment/Decrement
 					ff_count_valid				<= 1'b1;
 					ff_state					<= c_state_srch_next;
@@ -1447,7 +1468,8 @@ module vdp_command (
 				ff_cache_vram_write		<= 1'b1;
 				ff_cache_vram_wdata		<= w_destination;
 				ff_count_valid			<= 1'b1;
-				if( w_nx_end || w_dx_overflow || (ff_diy == 1'b1 && ff_dy == 11'd0 && w_dy_overflow == 1'b1) ) begin
+				//	Stepping above Y=0 ends the command; X-major lines step Y only on a shift.
+				if( w_nx_end || w_dx_overflow || (ff_diy == 1'b1 && ff_dy == 11'd0 && (ff_maj || w_line_shift)) ) begin
 					ff_state				<= c_state_pre_finish;
 				end
 				else if( reg_command_high_speed_mode ) begin
@@ -1563,7 +1585,7 @@ module vdp_command (
 			end
 			c_state_lmcm_next: begin
 				if( ff_read_color ) begin
-					if( (w_nx_end || w_sx_overflow || w_dx_overflow) && (w_ny_end || w_dy_overflow) ) begin
+					if( (w_nx_end || w_sx_overflow || w_dx_overflow) && (w_ny_end || w_sy_overflow) ) begin
 						ff_state				<= c_state_pre_finish;
 					end
 					else if( reg_command_high_speed_mode ) begin
@@ -1987,7 +2009,7 @@ module vdp_command (
 		endcase
 	endfunction
 
-	assign w_lop_pixel		= func_lop( ff_logical_opration, ff_source, ff_read_pixel );
+	assign w_lop_pixel		= func_lop( ff_logical_opration, ff_source & w_color_mask, ff_read_pixel );
 
 	function [7:0] func_destination(
 		input		[1:0]	bpp,

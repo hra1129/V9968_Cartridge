@@ -1,3 +1,32 @@
+## 2026-11-14 DOS 用自己判定テスト VDPCHK.COM を作成し、見つかった VDP コマンドの不具合7件を修正
+
+v0.99.6 と v0.99.7 がリリースされた。v0.99.7 の内容は、FG4=1 のとき全 VDP コマンドを SCREEN5 と同じ解像度・ビット深度で動かすこと、SP3=0 の LFMM のフォント読み出しを CPU と同じインターリーブ前提にすること、`test_vdp_timing_control_ssg` へのポート追加。
+
+- **VDPCHK.COM（`test/VDPCHK/`）**
+  - `gen_vdpchk.py` は openMSX（VDPCmdEngine.cc）準拠の参照モデルで、期待 CRC を埋め込んだテストのバイトコード（`VDPCHK.INC`）と `test_item.md` を生成する。`VDPCHK.ASM` のインタプリタがバイトコードを実行し、VRAM を CPU で読み戻した CRC-16 で判定する。`build.bat` でビルドする。
+  - 最後に「不一致数/全数」と失敗したテスト番号を表示する。不一致0なら `SUCCESS OF ALL` を表示する。終了時は画面をテキストに戻して DOS に戻る。
+  - 全769件。CPU による VRAM 読み書き（R#14 の値を数パターン）、全コマンド、DIX/DIY の全組み合わせ、画面はみ出し、NX/NY=0、LINE の斜め線、SRCH の見つかった・見つからないときの S#2/S#8/S#9、SCREEN5〜8/10/12、SCREEN0〜4 での CMD=1、全モードでの FG4=1 を含む。V9968 専用のセクション（FG4 など）は V9958 ではスキップする。
+  - RTL での突き合わせ用に `v9968/test_vdpchk`（tb.sv、run.bat）を追加した。同じバイトコードを ModelSim で実行する。
+- **見つかった RTL の不具合7件（`vdp_command.v`、openMSX と V9958 の動作に合わせた）**
+  1. LMCM で DIY=1 のとき1ラインで終了していた。終了判定に使われない DY のオーバーフローを見ていた。SY のオーバーフローで判定するようにした。
+  2. LINE で NY>NX のとき、ASX を10ビットに丸めていなかった。
+  3. LINE の X 主軸・DIY=1 で、Y=0 の最初の点で終了していた。Y を −1 へ進めるときに終了するようにした。
+  4. R#44 の色をビット深度でマスクしていなかったため、TIMP などの透明判定と SRCH の比較が誤っていた（FG4 の LMMC TIMP も含む）。
+  5. V58=1（128KB）の SC7/SC8 で、Y=512 が折り返さずにアドレスの bit17 が残っていた。
+  6. NY=0 が1023ラインになっていた。1024ラインにした。
+  7. CMD=0 の SCREEN0〜4 でもコマンドが実行されていた。FG4=1 であっても CMD=0 なら実行せず、すぐに終了する（V9958 と同じ）。
+- ModelSim の VDPCHK ベンチで全769件が一致した（`# SUCCESS OF ALL`）。全域 HMMV（180）は単独で約15分かかるため、tb.sv の既定のポーリング上限を 16000000 に上げた。
+- 回帰：`test_vdp_command`（tb、tb_flushend）が PASS。
+- Gowin 1.9.12.03 でビットストリーム生成まで完了。setup の最小 slack は +0.016ns、hold は +0.074ns、違反端点は0。Logic 82%。
+- 変更ファイル: `v9968/vdp_command.v`、`v9968/test_vdpchk/*`、`test/VDPCHK/*`、`history.md`。
+- 実機確認：FS-A1GT（turboR、V9958）で `RESULT: 0/559`、`SUCCESS OF ALL`（V9968 専用の210件はスキップ）。SX-2 + V9968 でも `SUCCESS OF ALL`。参照モデルが V9958 実機と一致することと、修正後の RTL が全769件で正しく動くことを確認した。
+- コミットはユーザーが行う。
+
+### 次回の作業
+
+- VDP コマンドを修正したときは、VDPCHK.COM（または `v9968/test_vdpchk` のベンチ）で回帰を確認する。
+- setup の余裕が +0.016ns と少ない。次の修正でビルドしたときに違反が出たら、その最悪経路だけを直す。
+
 ## 2026-11-14 hesoten さんの新しい報告3件を修正（色0と TP、S16 の偽衝突、LFMM の画面端と NX）
 
 ユーザーが v0.99.5 の実機動作を確認した。hesoten さんの報告リポジトリ（`hra_report`、89a2de6）に追加された未対応3件を修正した。
