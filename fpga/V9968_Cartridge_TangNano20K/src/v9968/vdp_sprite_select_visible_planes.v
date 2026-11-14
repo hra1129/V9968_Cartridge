@@ -151,7 +151,9 @@ module vdp_sprite_select_visible_planes (
 										(w_phase[2] && vram_interleave) ? w_sprite_mode2_attribute_i:
 										(    sprite_mode2               ? w_sprite_mode2_attribute  : w_sprite_mode1_attribute)) :18'd0;
 	assign w_selected_full			= ff_select_finish | (
-										(reg_sprite_mode3 || reg_sprite16_mode) ? ff_selected_count[4]:
+										 reg_sprite_mode3                       ? ff_selected_count[4]:
+										//	S16 in mode 1/2: the 33rd attribute read wraps to the first plane, so never select it.
+										 reg_sprite16_mode                      ? (ff_selected_count[4] | ff_plane_count[5]):
 										     sprite_mode2                       ? (ff_selected_count[4] | ff_selected_count[3] | ff_plane_count[5]): 
 										                                          (ff_selected_count[4] | ff_selected_count[3] | ff_selected_count[2] | ff_plane_count[5]) );
 	assign w_finish_line			= (reg_sprite_mode3 || sprite_mode2) ? 10'd216: 10'd208;

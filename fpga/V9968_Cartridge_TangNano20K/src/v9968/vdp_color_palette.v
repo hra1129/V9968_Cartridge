@@ -100,6 +100,7 @@ module vdp_color_palette (
 	wire				w_256colors_mode;
 	wire				w_4colors_mode;
 	wire				w_t12_mode;
+	wire				w_gm_mode;
 	wire				w_g4567_mode;
 	wire				w_g5_mode;
 	wire				w_g6_mode;
@@ -397,6 +398,8 @@ module vdp_color_palette (
 	                        	  (reg_screen_mode == 5'b00101) ||	// Text1 (SCREEN0:W40)
 	                        	  (reg_screen_mode == 5'b01001);	// Text2 (SCREEN0:W80)
 	assign w_g5_mode			= (reg_screen_mode == 5'b10000);	// Graphic5 (SCREEN6)
+	assign w_gm_mode			= (reg_screen_mode == 5'b00010) ||	// Multicolor (SCREEN3)
+	                        	  (reg_screen_mode == 5'b00110);	// Multicolor (SCREEN3)
 	assign w_g6_mode			= (reg_screen_mode == 5'b10100);	// Graphic6 (SCREEN7)
 	assign w_high_resolution	= w_g5_mode | w_g6_mode | (reg_screen_mode == 5'b01001);		// Text2 or Graphic5 or 6 (SCREEN0(W80) or SCREEN6 or 7)
 
@@ -445,8 +448,8 @@ module vdp_color_palette (
 				ff_display_color <= { 4'd0, w_display_color[3:0] };
 				ff_display_color_oe <= 1'b1;
 			end
-			else if( (w_display_color[3:0] != 4'd0 || reg_color0_opaque) ) begin
-				//	Background
+			else if( w_display_color[3:0] != 4'd0 || (reg_color0_opaque && !w_gm_mode) ) begin
+				//	Background (TP does not apply to Multicolor: its colour 0 is always transparent)
 				ff_display_color <= { 4'd0, w_display_color[3:0] };
 				ff_display_color_oe <= 1'b1;
 			end

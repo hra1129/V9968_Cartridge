@@ -163,6 +163,8 @@ module vdp_timing_control_screen_mode (
 	reg			[7:0]	ff_display_color;
 	reg					ff_display_color_en;
 	wire		[7:0]	w_backdrop_color;
+	wire		[3:0]	w_text_fg2;
+	wire		[3:0]	w_text_fg3;
 	reg			[7:0]	ff_pattern0;
 	reg			[7:0]	ff_pattern1;
 	reg			[7:0]	ff_pattern2;
@@ -621,6 +623,11 @@ module vdp_timing_control_screen_mode (
 	// --------------------------------------------------------------------
 	assign w_backdrop_color	= ( ff_mode[c_g7] ) ? reg_backdrop_color: { reg_backdrop_color[3:0], reg_backdrop_color[3:0] };
 
+	//	TEXT1/2: foreground colour 0 is transparent, so the character's own background colour shows
+	//	(R#7 for normal characters, R#12 for the blink area). Background colour 0 stays palette 0.
+	assign w_text_fg2		= ( ff_next_vram2[7:4] == 4'd0 ) ? ff_next_vram2[3:0]: ff_next_vram2[7:4];
+	assign w_text_fg3		= ( ff_next_vram3[7:4] == 4'd0 ) ? ff_next_vram3[3:0]: ff_next_vram3[7:4];
+
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_pattern_valid <= 1'b0;
@@ -647,8 +654,8 @@ module vdp_timing_control_screen_mode (
 			end
 			else if( ff_phase == 3'd5 ) begin
 				ff_pattern_valid <= 1'b1;
-				if( ff_mode[c_g1] || ff_mode[c_g2] || ff_mode[c_g3] || ff_mode[c_t1] ) begin
-					//	SCREEN 1, 2, 4, 0(W40) bit pattern --> color code
+				if( ff_mode[c_g1] || ff_mode[c_g2] || ff_mode[c_g3] ) begin
+					//	SCREEN 1, 2, 4 bit pattern --> color code
 					ff_pattern0 <= ff_next_vram1[7] ? { 4'd0, ff_next_vram2[ 7: 4] }: { 4'd0, ff_next_vram2[ 3: 0] };
 					ff_pattern1 <= ff_next_vram1[6] ? { 4'd0, ff_next_vram2[ 7: 4] }: { 4'd0, ff_next_vram2[ 3: 0] };
 					ff_pattern2 <= ff_next_vram1[5] ? { 4'd0, ff_next_vram2[ 7: 4] }: { 4'd0, ff_next_vram2[ 3: 0] };
@@ -658,14 +665,25 @@ module vdp_timing_control_screen_mode (
 					ff_pattern6 <= ff_next_vram1[1] ? { 4'd0, ff_next_vram2[ 7: 4] }: { 4'd0, ff_next_vram2[ 3: 0] };
 					ff_pattern7 <= ff_next_vram1[0] ? { 4'd0, ff_next_vram2[ 7: 4] }: { 4'd0, ff_next_vram2[ 3: 0] };
 				end
+				else if( ff_mode[c_t1] ) begin
+					//	SCREEN 0(W40) bit pattern --> color code
+					ff_pattern0 <= ff_next_vram1[7] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern1 <= ff_next_vram1[6] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern2 <= ff_next_vram1[5] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern3 <= ff_next_vram1[4] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern4 <= ff_next_vram1[3] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern5 <= ff_next_vram1[2] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern6 <= ff_next_vram1[1] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+					ff_pattern7 <= ff_next_vram1[0] ? { 4'd0, w_text_fg2 }: { 4'd0, ff_next_vram2[ 3: 0] };
+				end
 				else if( ff_mode[c_t2] ) begin
 					//	SCREEN 0(W80) bit pattern --> color code
-					ff_pattern0 <= { ff_next_vram1[7] ? { ff_next_vram2[ 7: 4] }: { ff_next_vram2[ 3: 0] }, ff_next_vram1[6] ? { ff_next_vram2[ 7: 4] }: { ff_next_vram2[ 3: 0] } };
-					ff_pattern1 <= { ff_next_vram1[5] ? { ff_next_vram2[ 7: 4] }: { ff_next_vram2[ 3: 0] }, ff_next_vram1[4] ? { ff_next_vram2[ 7: 4] }: { ff_next_vram2[ 3: 0] } };
-					ff_pattern2 <= { ff_next_vram1[3] ? { ff_next_vram2[ 7: 4] }: { ff_next_vram2[ 3: 0] }, ff_next_vram1[2] ? { ff_next_vram2[ 7: 4] }: { ff_next_vram2[ 3: 0] } };
-					ff_pattern3 <= { ff_next_vram5[7] ? { ff_next_vram3[ 7: 4] }: { ff_next_vram3[ 3: 0] }, ff_next_vram5[6] ? { ff_next_vram3[ 7: 4] }: { ff_next_vram3[ 3: 0] } };
-					ff_pattern4 <= { ff_next_vram5[5] ? { ff_next_vram3[ 7: 4] }: { ff_next_vram3[ 3: 0] }, ff_next_vram5[4] ? { ff_next_vram3[ 7: 4] }: { ff_next_vram3[ 3: 0] } };
-					ff_pattern5 <= { ff_next_vram5[3] ? { ff_next_vram3[ 7: 4] }: { ff_next_vram3[ 3: 0] }, ff_next_vram5[2] ? { ff_next_vram3[ 7: 4] }: { ff_next_vram3[ 3: 0] } };
+					ff_pattern0 <= { ff_next_vram1[7] ? w_text_fg2: { ff_next_vram2[ 3: 0] }, ff_next_vram1[6] ? w_text_fg2: { ff_next_vram2[ 3: 0] } };
+					ff_pattern1 <= { ff_next_vram1[5] ? w_text_fg2: { ff_next_vram2[ 3: 0] }, ff_next_vram1[4] ? w_text_fg2: { ff_next_vram2[ 3: 0] } };
+					ff_pattern2 <= { ff_next_vram1[3] ? w_text_fg2: { ff_next_vram2[ 3: 0] }, ff_next_vram1[2] ? w_text_fg2: { ff_next_vram2[ 3: 0] } };
+					ff_pattern3 <= { ff_next_vram5[7] ? w_text_fg3: { ff_next_vram3[ 3: 0] }, ff_next_vram5[6] ? w_text_fg3: { ff_next_vram3[ 3: 0] } };
+					ff_pattern4 <= { ff_next_vram5[5] ? w_text_fg3: { ff_next_vram3[ 3: 0] }, ff_next_vram5[4] ? w_text_fg3: { ff_next_vram3[ 3: 0] } };
+					ff_pattern5 <= { ff_next_vram5[3] ? w_text_fg3: { ff_next_vram3[ 3: 0] }, ff_next_vram5[2] ? w_text_fg3: { ff_next_vram3[ 3: 0] } };
 					ff_pattern6 <= w_backdrop_color;
 					ff_pattern7 <= w_backdrop_color;
 				end

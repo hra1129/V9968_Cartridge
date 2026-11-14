@@ -1,3 +1,30 @@
+## 2026-11-14 hesoten さんの新しい報告3件を修正（色0と TP、S16 の偽衝突、LFMM の画面端と NX）
+
+ユーザーが v0.99.5 の実機動作を確認した。hesoten さんの報告リポジトリ（`hra_report`、89a2de6）に追加された未対応3件を修正した。
+
+- **B02 SpriteMode2 の S16=1 で偽の衝突（`vdp_sprite_select_visible_planes.v`）**
+  - S16=1（SpriteMode1/2）のとき、選択の打ち切りが `ff_selected_count[4]`（16枚選んだ）だけで、32枚を走査し終えた判定（`ff_plane_count[5]`）がなかった。16枚未満のラインでは33番目の読み出しがプレーン0に戻り、同じプレーンがもう一度選ばれて自分自身と衝突していた。
+  - S16 のときは `ff_selected_count[4] | ff_plane_count[5]` で選択を打ち切るようにした（報告のパッチと同じ）。SpriteMode3 は従来どおり。
+  - 提供ベンチ `tb_s16.sv` の20ケースを ModelSim で修正前後とも実行した。修正前は S16=1 の7ケースで偽の衝突（C=1）、s16_hit は衝突座標が誤り（X=112・Y=108）。修正後は全ケースが期待値（C=0、s16_row17 は 90h、s16off_row9 は 88h、s16_hit は X=120・Y=112）。SCREEN1/5 の映像チェックサムは修正前と一致し、SCREEN8 の映像は S16=0 と同じになった。
+- **B03 LFMM の画面端で固まる・NX を文字数として数えない（`vdp_command.v`）**
+  - 画面端（`w_dx_overflow`）を文字の行の終わりとしても扱い、フォントアドレス・NY・状態遷移を進めるようにした。画面端で固まっていた5ケースが終わるようになった。
+  - NX は文字数として数える（文字の最後の行・最後のビットで +1）。LFMM 中に `reg_nx` を書き換える処理を削除し、終了条件も「最後の文字のビット0」か画面端で判定する。
+  - 提供ベンチ `tb_lfmm.sv` の21ケース：修正前は model_diff>0 が多数、5ケースで CE が落ちなかった。修正後は全ケースで model_diff=0、CE も落ちる。
+  - SCREEN6/7、DIY=1、FG4、NY=0 は報告でも未確認で、今回も未確認。
+- **06 テキスト・マルチカラーの色0と TP（`vdp_timing_control_screen_mode.v`、`vdp_color_palette.v`）**
+  - Text1/Text2 の文字の前景色が0なら、その文字の背景色（普通の文字は R#7、ブリンク欄は R#12 の下位4ビット）で描く。TP には関係なく適用する。Text1 は Graphic1〜3 と共通だった式から分けた。ブリンク欄の背景色0は実機どおりパレット0のまま。
+  - Multicolor の色0は、TP=1 でも周辺色にする。
+  - TPTEST 相当の色0ベンチ（セッション内で作成、14ケース）で、修正前は報告の差1〜3がすべて再現し、修正後は実機の結果と一致した。前景色0を含まないケース（Text の前景色15、SCREEN2 の TP=0/1）は修正前後で同じ。
+- 回帰：`test_vdp_command`、`test_vdp_color_palette`、`test_vdp_sprite_makeup_pixel`、`test_vdp_sprite_select_visible_planes` が PASS。`test_vdp_timing_control_ssg` は以前のポート追加にベンチが追従しておらず読み込みで失敗する（既存の問題で今回の変更とは無関係）。
+- Gowin 1.9.12.03 でビットストリーム生成まで完了。setup の最小 slack は +0.156ns（スプライトの `u_divide_table` → `u_makeup_pixel` の経路）、hold は +0.074ns、全クロックの TNS・違反端点は0。Logic 81%。setup の余裕が v0.99.5 より増えたので、タイミング対策は行っていない。
+- 変更ファイル: `v9968/vdp_sprite_select_visible_planes.v`、`v9968/vdp_command.v`、`v9968/vdp_timing_control_screen_mode.v`、`v9968/vdp_color_palette.v`、`history.md`。
+- 実機は未確認。コミットはユーザーが行う。
+
+### 次回の作業
+
+- 実機で確認する：TPTEST/TPTEST2、スプライト16枚モード（S16）のゲーム、LFMM を使うソフト、起動ロゴ・SCREEN5〜8 の表示。
+- `test_vdp_timing_control_ssg` のベンチを現在のポートに合わせて直すかどうかを決める。
+
 ## 2026-11-13 NX/NY の終了時書き戻しと次コマンドのパラメータ書き込みの競合を修正
 
 ユーザーが実機で動作を確認し、キャッシュフラッシュ完了通知の修正を v0.99.4 としてリリースした。

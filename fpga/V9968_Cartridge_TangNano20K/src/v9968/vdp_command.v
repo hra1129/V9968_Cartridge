@@ -423,7 +423,7 @@ module vdp_command (
 		else if( ff_cache_vram_valid ) begin
 			//	hold
 		end
-		else if( ff_count_valid && ff_bit_count == 3'd0 ) begin
+		else if( ff_count_valid && (ff_bit_count == 3'd0 || (ff_command == c_lfmm && w_dx_overflow)) ) begin
 			ff_font_address	<= ff_font_address + 18'd1;
 		end
 	end
@@ -815,13 +815,6 @@ module vdp_command (
 				reg_nx[10:9]	<= 2'd0;
 			end
 		end
-		else if( ff_count_valid ) begin
-			if( ff_command == c_lfmm ) begin
-				if( ff_bit_count == 3'd0 && w_ny_end ) begin
-					reg_nx	<= ff_nx;
-				end
-			end
-		end
 	end
 
 	always @( posedge clk ) begin
@@ -850,7 +843,8 @@ module vdp_command (
 				end
 			end
 			else if( ff_command == c_lfmm ) begin
-				if( w_ny_end ) begin
+				// NX counts characters: advance once per character, after its last row and last bit.
+				if( ff_bit_count == 3'd0 && w_ny_end ) begin
 					ff_nx <= ff_nx + 11'd1;
 				end
 			end
@@ -925,7 +919,8 @@ module vdp_command (
 		end
 		else if( ff_count_valid ) begin
 			if( ff_command == c_lfmm ) begin
-				if( ff_bit_count == 3'd0 ) begin
+				// The screen edge ends the character row as well as its eighth bit.
+				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
 					if( w_ny_end ) begin
 						ff_ny <= 11'd1;
 					end
@@ -1893,10 +1888,10 @@ module vdp_command (
 				ff_cache_vram_write		<= 1'b1;
 				ff_cache_vram_wdata		<= w_destination;
 				ff_count_valid			<= 1'b1;
-				if( (w_nx_end || w_dx_overflow) && (w_ny_end || w_dy_overflow) ) begin
+				if( ((w_nx_end && ff_bit_count == 3'd0) || w_dx_overflow) && (w_ny_end || w_dy_overflow) ) begin
 					ff_state				<= c_state_pre_finish;
 				end
-				else if( ff_bit_count != 3'd0 ) begin
+				else if( ff_bit_count != 3'd0 && !w_dx_overflow ) begin
 					ff_wait_counter			<= 8'd1;
 					ff_next_state			<= c_state_lfmm_read;
 					ff_state				<= c_state_wait_counter;
