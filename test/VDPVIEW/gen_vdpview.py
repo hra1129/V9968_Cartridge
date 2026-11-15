@@ -1169,7 +1169,7 @@ def build_sp3_seam_page():
     p.r20 = 0x08
     p.r7 = 0
     # attribute table at 2000h (VRAM line 64, outside the visible lines 100-255, 0-55)
-    p.regs = [(0, 0x06), (2, 0x1F), (5, 0x47), (11, 0x00), (6, 0x20)]
+    p.regs = [(0, 0x06), (2, 0x1F), (5, 0x40), (11, 0x00), (6, 0x20)]
     p.extra_regs = [(23, r23)]
     p.fill(0, 0, 256, 56, 4)
     ss = SpriteSet3(p, 0x2000)
