@@ -506,6 +506,28 @@ module tb ();
 		sprite_attr_table[1] = { 8'h3B, 8'h20, 8'd80, 8'd39 };
 		simulate_scanline(8'd40, 32'h00000003);
 
+		$display("=== Test 13: Display off cancels pending sprite VRAM request ===");
+		screen_v_active = 1'b1;
+		screen_h_active = 1'b1;
+		reg_display_on = 1'b1;
+		screen_pos_x = 14'h0020;
+		wait_cycles(1);
+		#1;
+		if( vram_valid !== 1'b1 ) begin
+			$fatal(1, "Sprite VRAM request was not raised before display off");
+		end
+		reg_display_on = 1'b0;
+		wait_cycles(1);
+		#1;
+		if( vram_valid !== 1'b0 ) begin
+			$fatal(1, "Sprite VRAM request remained asserted after display off");
+		end
+		wait_cycles(2);
+		#1;
+		if( vram_valid !== 1'b0 ) begin
+			$fatal(1, "Sprite VRAM request remained stuck while display was off");
+		end
+
 		$display("=== Test completed ===");
 		$finish;
 	end
