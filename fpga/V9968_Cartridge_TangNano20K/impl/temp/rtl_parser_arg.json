@@ -10,6 +10,10 @@
             "Type": "verilog"
         },
         {
+            "Path": "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/i2s/ip_i2s_receiver.v",
+            "Type": "verilog"
+        },
+        {
             "Path": "C:/Users/hra/Documents/github/HRA_product/V9968_Cartridge/fpga/V9968_Cartridge_TangNano20K/src/geo3d/geo3d_bus.v",
             "Type": "verilog"
         },

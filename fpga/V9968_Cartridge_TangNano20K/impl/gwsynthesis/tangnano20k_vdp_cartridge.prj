@@ -6,6 +6,7 @@
     <FileList>
         <File path="C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\debugger\ip_debugger.v" type="verilog"/>
         <File path="C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\hdmi_converter\hdmi_converter.v" type="verilog"/>
+        <File path="C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\i2s\ip_i2s_receiver.v" type="verilog"/>
         <File path="C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\geo3d\geo3d_bus.v" type="verilog"/>
         <File path="C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\geo3d\geo3d_core.v" type="verilog"/>
         <File path="C:\Users\hra\Documents\github\HRA_product\V9968_Cartridge\fpga\V9968_Cartridge_TangNano20K\src\geo3d\geo3d_engine.v" type="verilog"/>

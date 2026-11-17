@@ -66,14 +66,14 @@ module tb ();
 	wire				cache_flush_end;
 	
 	// VDP command interface
-	logic	[17:0]		cache_vram_address;
+	logic	[21:0]		cache_vram_address;
 	logic				cache_vram_valid;
 	wire				cache_vram_ready;
 	logic				cache_vram_write;
 	logic	[7:0]		cache_vram_wdata;
 	wire	[7:0]		cache_vram_rdata;
 	wire				cache_vram_rdata_en;
-	logic	[17:0]		cpu_vram_address;
+	logic	[21:0]		cpu_vram_address;
 	logic				cpu_vram_valid;
 	wire				cpu_vram_ready;
 	logic				cpu_vram_write;
@@ -82,7 +82,7 @@ module tb ();
 	wire				cpu_vram_rdata_en;
 	
 	// VRAM interface
-	wire	[17:0]		command_vram_address;
+	wire	[21:0]		command_vram_address;
 	wire				command_vram_valid;
 	logic				command_vram_ready;
 	wire				command_vram_write;

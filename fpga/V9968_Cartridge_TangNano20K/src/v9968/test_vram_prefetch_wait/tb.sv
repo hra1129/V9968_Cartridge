@@ -54,6 +54,9 @@ module tb_vram_prefetch_wait;
 	wire [7:0] cpu_vram_rdata;
 	wire cpu_vram_rdata_en;
 	reg vram_access_mask = 1'b0;
+	wire [3:0] cpu_bank;
+	wire [3:0] bg_bank;
+	wire [3:0] sprite_bank;
 
 	vdp_cpu_interface u_cpu (
 		.reset_n(reset_n), .clk(clk),
@@ -89,7 +92,9 @@ module tb_vram_prefetch_wait;
 		.reg_command_high_speed_mode(), .reg_sprite_nonR23_mode(),
 		.reg_interrupt_line_nonR23_mode(), .reg_sprite_mode3(), .reg_ext_palette_mode(),
 		.reg_ext_command_mode(), .reg_vram256k_mode(), .reg_sprite16_mode(),
-		.reg_flat_interlace_mode(), .button(2'd0),
+		.reg_flat_interlace_mode(), .reg_cpu_bank(cpu_bank), .reg_bg_bank(bg_bank),
+		.reg_sprite_bank(sprite_bank), .reg_command_src_bank(), .reg_command_dst_bank(),
+		.button(2'd0),
 		.pulse0(), .pulse1(), .pulse2(), .pulse3(), .pulse4(), .pulse5(), .pulse6(), .pulse7()
 	);
 
@@ -98,7 +103,7 @@ module tb_vram_prefetch_wait;
 	reg command_write = 1'b0;
 	reg [7:0] command_wdata = 8'd0;
 	wire command_ready;
-	wire [17:0] cache_address;
+	wire [21:0] cache_address;
 	wire cache_valid;
 	wire cache_ready;
 	wire cache_write;
@@ -109,11 +114,11 @@ module tb_vram_prefetch_wait;
 
 	vdp_command_cache u_cache (
 		.reset_n(reset_n), .clk(clk), .start(1'b0),
-		.cache_vram_address(command_address), .cache_vram_valid(command_valid),
+		.cache_vram_address({ 4'd0, command_address }), .cache_vram_valid(command_valid),
 		.cache_vram_ready(command_ready), .cache_vram_write(command_write),
 		.cache_vram_wdata(command_wdata), .cache_vram_rdata(), .cache_vram_rdata_en(),
 		.cache_flush_start(1'b0), .cache_flush_end(),
-		.cpu_vram_address(cpu_vram_address), .cpu_vram_valid(cpu_vram_valid),
+		.cpu_vram_address({ cpu_bank, cpu_vram_address }), .cpu_vram_valid(cpu_vram_valid),
 		.cpu_vram_ready(cpu_vram_ready), .cpu_vram_write(cpu_vram_write),
 		.cpu_vram_wdata(cpu_vram_wdata), .cpu_vram_rdata(cpu_vram_rdata),
 		.cpu_vram_rdata_en(cpu_vram_rdata_en),
@@ -130,7 +135,7 @@ module tb_vram_prefetch_wait;
 	reg display_contention = 1'b0;
 	wire pre_refresh = force_refresh || (periodic_refresh && refresh_count == 8'd100);
 	wire screen_valid = display_contention && h_count == 4'd1;
-	wire [17:2] sdram_address;
+	wire [21:2] sdram_address;
 	wire sdram_valid;
 	wire sdram_write;
 	wire [31:0] sdram_wdata;
@@ -146,6 +151,7 @@ module tb_vram_prefetch_wait;
 	vdp_vram_interface u_vram_interface (
 		.reset_n(reset_n), .clk(clk), .initial_busy(initial_busy),
 		.h_count(h_count), .vram_interleave(1'b0),
+		.reg_bg_bank(bg_bank), .reg_sprite_bank(sprite_bank),
 		.screen_mode_vram_address(18'h3F000), .screen_mode_vram_valid(screen_valid),
 		.screen_mode_vram_rdata(),
 		.sprite_vram_address(18'd0), .sprite_vram_valid(1'b0),
@@ -154,7 +160,7 @@ module tb_vram_prefetch_wait;
 		.command_vram_ready(cache_ready), .command_vram_write(cache_write),
 		.command_vram_wdata(cache_wdata), .command_vram_wdata_mask(cache_wdata_mask),
 		.command_vram_rdata(cache_rdata), .command_vram_rdata_en(cache_rdata_en),
-		.cpu_vram_address(18'd0), .cpu_vram_valid(1'b0), .cpu_vram_ready(),
+		.cpu_vram_address(22'd0), .cpu_vram_valid(1'b0), .cpu_vram_ready(),
 		.cpu_vram_write(1'b0), .cpu_vram_wdata(8'd0), .cpu_vram_rdata(),
 		.cpu_vram_rdata_en(), .vram_address(sdram_address), .vram_valid(sdram_valid),
 		.vram_write(sdram_write), .vram_wdata(sdram_wdata),
@@ -162,7 +168,7 @@ module tb_vram_prefetch_wait;
 		.vram_rdata_en(sdram_rdata_en), .pre_vram_refresh(pre_refresh), .vram_refresh()
 	);
 
-	reg [31:0] memory [0:65535];
+	reg [31:0] memory [0:1048575];
 	reg [7:0] expected [0:262143];
 	reg [31:0] read_pipe [0:7];
 	reg [7:0] read_valid = 8'd0;
@@ -388,6 +394,8 @@ module tb_vram_prefetch_wait;
 		for( i = 0; i < 262144; i = i + 1 ) expected[i] = initial_byte(i[17:0]);
 		for( i = 0; i < 65536; i = i + 1 )
 			memory[i] = { expected[i*4+3], expected[i*4+2], expected[i*4+1], expected[i*4] };
+		for( i = 65536; i < 1048576; i = i + 1 )
+			memory[i] = { i[19:16], 4'h0, i[19:16], 4'h0, i[19:16], 4'h0, i[19:16], 4'h0 };
 		repeat(5) @(negedge clk);
 		reset_n = 1'b1;
 		repeat(5) @(negedge clk);
@@ -587,6 +595,55 @@ module tb_vram_prefetch_wait;
 		set_read_address(base, 14'h3F50);
 		for( i = 0; i < 4; i = i + 1 )
 			read_port(base, expected[18'h07F50 + i], -1, -1, 0);
+
+		$display("[11] VRAM bank registers R#28/R#29");
+		write_port(base + 8'd4, 8'h00);
+		write_register(base, 6'd21, 8'h00);
+		write_register(base, 6'd14, 8'h00);
+		write_register(base, 6'd28, 8'hF5);
+		if( cpu_bank !== 4'h5 ) $fatal(1, "R#28 did not select CPU bank 5");
+		set_write_address(base, 14'h0123);
+		write_port(base, 8'hD5);
+		set_read_address(base, 14'h0123);
+		read_port(base, 8'hD5, -1, -1, 0);
+		write_register(base, 6'd28, 8'h00);
+		set_read_address(base, 14'h0123);
+		read_port(base, expected[18'h00123], -1, -1, 0);
+		write_register(base, 6'd28, 8'h05);
+		set_read_address(base, 14'h0122);
+		read_port(base, 8'h50, -1, -1, 0);
+		read_port(base, 8'hD5, -1, -1, 0);
+		repeat(600) @(negedge clk);
+		if( memory[{ 4'h5, 16'h0048 }] !== 32'hD5505050 )
+			$fatal(1, "Bank 5 write reached %08h instead of D5505050", memory[{ 4'h5, 16'h0048 }]);
+		if( memory[16'h0048][31:24] !== expected[18'h00123] )
+			$fatal(1, "Bank 5 write leaked into bank 0");
+		write_port(base + 8'd4, 8'h80);
+		write_register(base, 6'd28, 8'h03);
+		write_register(base, 6'd29, 8'h77);
+		if( cpu_bank !== 4'h5 || bg_bank !== 4'h0 || sprite_bank !== 4'h0 )
+			$fatal(1, "Bank registers were written while Port#4 Lock=1");
+		write_port(base + 8'd4, 8'h00);
+		write_register(base, 6'd29, 8'hA3);
+		if( bg_bank !== 4'h3 || sprite_bank !== 4'hA ) $fatal(1, "R#29 bank fields are wrong");
+		display_contention = 1'b1;
+		fork : wait_bg_access
+			begin
+				@(posedge clk iff (sdram_valid && !sdram_write && sdram_address == { 4'h3, 16'hFC00 }));
+				disable wait_bg_access;
+			end
+			begin
+				repeat(200) @(negedge clk);
+				$fatal(1, "Background access did not use bank 3");
+			end
+		join
+		display_contention = 1'b0;
+		write_register(base, 6'd21, 8'h01);
+		if( cpu_bank !== 4'h0 || bg_bank !== 4'h0 || sprite_bank !== 4'h0 )
+			$fatal(1, "V58=1 did not clear the bank registers");
+		write_register(base, 6'd28, 8'h05);
+		if( cpu_bank !== 4'h0 ) $fatal(1, "R#28 was written while V58=1");
+		write_register(base, 6'd21, 8'h00);
 
 		$display("VRAM prefetch/WAIT integration PASSED; max prefetched-read response %0t ps", max_fast_read_time);
 		test_passed = 1'b1;

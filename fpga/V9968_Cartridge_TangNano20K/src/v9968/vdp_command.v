@@ -58,7 +58,7 @@ module vdp_command (
 	input				reset_n,
 	input				clk,
 	//	Shared cache interface
-	output		[17:0]	cache_vram_address,
+	output		[21:0]	cache_vram_address,
 	output				cache_vram_valid,
 	input				cache_vram_ready,
 	output				cache_vram_write,
@@ -88,6 +88,8 @@ module vdp_command (
 	input				reg_command_high_speed_mode,
 	input				reg_ext_command_mode,
 	input				reg_vram256k_mode,
+	input		[3:0]	reg_command_src_bank,
+	input		[3:0]	reg_command_dst_bank,
 	output				vram_access_mask,
 	output				intr_command_end
 );
@@ -208,7 +210,7 @@ module vdp_command (
 	reg					ff_start;
 	reg					ff_geo_hmmv;
 
-	reg			[17:0]	ff_cache_vram_address;
+	reg			[21:0]	ff_cache_vram_address;
 	reg					ff_cache_vram_valid;
 	reg					ff_cache_vram_write;
 	reg			[7:0]	ff_cache_vram_wdata;
@@ -235,10 +237,10 @@ module vdp_command (
 	wire		[17:0]	w_address_d_pre;
 	wire		[17:0]	w_address_s_lim;
 	wire		[17:0]	w_address_d_lim;
-	wire		[17:0]	w_address_s;
-	wire		[17:0]	w_address_d;
+	wire		[21:0]	w_address_s;
+	wire		[21:0]	w_address_d;
 	wire		[7:0]	w_color_mask;
-	wire		[17:0]	w_font_address;
+	wire		[21:0]	w_font_address;
 	wire		[10:0]	w_lfmm_font_advance_wrap;
 	wire		[11:0]	w_lfmm_font_advance;
 	wire				w_lfmm_y_end;
@@ -377,10 +379,11 @@ module vdp_command (
 	//	With 128KB of VRAM (V58=1) SCREEN 7/8 wrap from Y=511 to Y=0 as on the V9958.
 	assign w_address_s_lim		= { w_address_s_pre[17] & reg_vram256k_mode, w_address_s_pre[16:0] };
 	assign w_address_d_lim		= { w_address_d_pre[17] & reg_vram256k_mode, w_address_d_pre[16:0] };
-	assign w_address_s			= vram_interleave ? { w_address_s_lim[17], w_address_s_lim[0], w_address_s_lim[16:1] }: w_address_s_lim;
-	assign w_address_d			= vram_interleave ? { w_address_d_lim[17], w_address_d_lim[0], w_address_d_lim[16:1] }: w_address_d_lim;
+	//	A21..A18 come from the VRAM bank registers (R#30); the LFMM font is read from the source bank.
+	assign w_address_s			= { reg_command_src_bank, vram_interleave ? { w_address_s_lim[17], w_address_s_lim[0], w_address_s_lim[16:1] }: w_address_s_lim };
+	assign w_address_d			= { reg_command_dst_bank, vram_interleave ? { w_address_d_lim[17], w_address_d_lim[0], w_address_d_lim[16:1] }: w_address_d_lim };
 	//	The font address is a CPU-view address, so it is interleaved in the same way as the CPU access
-	assign w_font_address		= vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address;
+	assign w_font_address		= { reg_command_src_bank, vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address };
 	assign w_lfmm_y_end			= w_ny_end || w_dy_overflow;
 	assign w_lfmm_font_advance_wrap = reg_ny - ff_ny + 11'd1;
 	assign w_lfmm_font_advance	= reg_vram256k_mode ?
@@ -1303,7 +1306,7 @@ module vdp_command (
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_state					<= c_state_idle;
-			ff_cache_vram_address		<= 17'd0;
+			ff_cache_vram_address		<= 22'd0;
 			ff_cache_flush_start		<= 1'b0;
 			ff_cache_vram_valid			<= 1'b0;
 			ff_cache_vram_write			<= 1'b0;

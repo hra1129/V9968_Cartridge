@@ -72,7 +72,7 @@ module vdp (
 
 	output				int_n,
 
-	output		[17:2]	vram_address,
+	output		[21:2]	vram_address,
 	output				vram_write,
 	output				vram_valid,
 	output		[31:0]	vram_wdata,
@@ -135,14 +135,14 @@ module vdp (
 	wire		[4:0]	w_palette_b;
 
 	wire		[17:0]	w_cpu_vram_address;
-	wire		[17:0]	w_cpu_cache_address;
+	wire		[21:0]	w_cpu_cache_address;
 	wire				w_cpu_vram_valid;
     wire                w_cpu_vram_ready;
 	wire				w_cpu_vram_write;
 	wire		[7:0]	w_cpu_vram_wdata;
 	wire		[7:0]	w_cpu_vram_rdata;
 	wire				w_cpu_vram_rdata_en;
-	wire		[17:0]	w_cache_vram_address;
+	wire		[21:0]	w_cache_vram_address;
 	wire				w_cache_vram_valid;
 	wire				w_cache_vram_ready;
 	wire				w_cache_vram_write;
@@ -168,7 +168,7 @@ module vdp (
 	wire		[1:0]	w_sprite_display_color_transparent;
 	wire				w_sprite_display_color_en;
 
-	wire		[17:0]	w_command_vram_address;
+	wire		[21:0]	w_command_vram_address;
 	wire				w_command_vram_valid;
 	wire				w_command_vram_ready;
 	wire				w_command_vram_write;
@@ -242,6 +242,11 @@ module vdp (
 	wire				reg_vram256k_mode;
 	wire				reg_sprite16_mode;
 	wire				reg_flat_interlace_mode;
+	wire		[3:0]	reg_cpu_bank;
+	wire		[3:0]	reg_bg_bank;
+	wire		[3:0]	reg_sprite_bank;
+	wire		[3:0]	reg_command_src_bank;
+	wire		[3:0]	reg_command_dst_bank;
 
 	// --------------------------------------------------------------------
 	//	CPU Interface
@@ -337,6 +342,11 @@ module vdp (
 		.reg_vram256k_mode							( reg_vram256k_mode							),
 		.reg_sprite16_mode							( reg_sprite16_mode							),
 		.reg_flat_interlace_mode					( reg_flat_interlace_mode					),
+		.reg_cpu_bank								( reg_cpu_bank								),
+		.reg_bg_bank								( reg_bg_bank								),
+		.reg_sprite_bank							( reg_sprite_bank							),
+		.reg_command_src_bank						( reg_command_src_bank						),
+		.reg_command_dst_bank						( reg_command_dst_bank						),
 		.button										( button									),
 		.pulse0										( pulse0									),
 		.pulse1										( pulse1									),
@@ -458,6 +468,8 @@ module vdp (
 		.reg_command_high_speed_mode				( reg_command_high_speed_mode				),
 		.reg_ext_command_mode						( reg_ext_command_mode						),
 		.reg_vram256k_mode							( reg_vram256k_mode							),
+		.reg_command_src_bank						( reg_command_src_bank						),
+		.reg_command_dst_bank						( reg_command_dst_bank						),
 		.vram_access_mask							( w_vram_access_mask						),
 		.intr_command_end							( w_intr_command_end						)
 	);
@@ -465,8 +477,8 @@ module vdp (
 	// --------------------------------------------------------------------
 	//	Shared VRAM cache
 	// --------------------------------------------------------------------
-	assign w_cpu_cache_address = w_vram_interleave ?
-		{ w_cpu_vram_address[17], w_cpu_vram_address[0], w_cpu_vram_address[16:1] } : w_cpu_vram_address;
+	assign w_cpu_cache_address = { reg_cpu_bank, w_vram_interleave ?
+		{ w_cpu_vram_address[17], w_cpu_vram_address[0], w_cpu_vram_address[16:1] } : w_cpu_vram_address };
 
 	vdp_command_cache u_cache (
 		.reset_n									( reset_n								),
@@ -507,6 +519,8 @@ module vdp (
 		.initial_busy								( initial_busy								),
 		.h_count									( w_screen_pos_x[3:0]						),
 		.vram_interleave							( w_vram_interleave							),
+		.reg_bg_bank								( reg_bg_bank								),
+		.reg_sprite_bank							( reg_sprite_bank							),
 		.screen_mode_vram_address					( w_screen_mode_vram_address				),
 		.screen_mode_vram_valid						( w_screen_mode_vram_valid					),
 		.screen_mode_vram_rdata						( w_screen_mode_vram_rdata					),
@@ -522,7 +536,7 @@ module vdp (
 		.command_vram_wdata_mask					( w_command_vram_wdata_mask					),
 		.command_vram_rdata							( w_command_vram_rdata					),
 		.command_vram_rdata_en						( w_command_vram_rdata_en					),
-		.cpu_vram_address							( 18'd0										),
+		.cpu_vram_address							( 22'd0										),
 		.cpu_vram_valid								( 1'b0										),
 		.cpu_vram_ready								( 											),
 		.cpu_vram_write								( 1'b0										),

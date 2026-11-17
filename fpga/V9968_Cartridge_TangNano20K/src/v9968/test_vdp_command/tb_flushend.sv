@@ -7,11 +7,11 @@ module tb_flushend;
 	reg [5:0] register_num = 6'd0;
 	reg [7:0] register_data = 8'd0;
 	reg register_fill_span = 1'b0;
-	wire [17:0] cache_address;
+	wire [21:0] cache_address;
 	wire cache_valid, cache_ready, cache_write;
 	wire [7:0] cache_wdata, cache_rdata;
 	wire cache_rdata_en, flush_start, flush_end;
-	wire [17:0] vram_address;
+	wire [21:0] vram_address;
 	wire vram_valid, vram_write;
 	wire [31:0] vram_wdata;
 	wire [3:0] vram_mask;
@@ -50,7 +50,8 @@ module tb_flushend;
 		.screen_mode(10'h040), .reg_yjk_mode(1'b0), .vram_interleave(1'b0),
 		.reg_text_back_color(8'd0), .reg_command_enable(1'b1),
 		.reg_command_high_speed_mode(1'b1), .reg_ext_command_mode(1'b0),
-		.reg_vram256k_mode(1'b1), .vram_access_mask(), .intr_command_end(command_end)
+		.reg_vram256k_mode(1'b1), .reg_command_src_bank(4'd0), .reg_command_dst_bank(4'd0),
+		.vram_access_mask(), .intr_command_end(command_end)
 	);
 
 	vdp_command_cache u_cache (
@@ -60,7 +61,7 @@ module tb_flushend;
 		.cache_vram_wdata(cache_wdata), .cache_vram_rdata(cache_rdata),
 		.cache_vram_rdata_en(cache_rdata_en),
 		.cache_flush_start(flush_start), .cache_flush_end(flush_end),
-		.cpu_vram_address(18'h3F000), .cpu_vram_valid(cpu_valid),
+		.cpu_vram_address(22'h03F000), .cpu_vram_valid(cpu_valid),
 		.cpu_vram_ready(cpu_ready), .cpu_vram_write(1'b1), .cpu_vram_wdata(8'hA5),
 		.cpu_vram_rdata(), .cpu_vram_rdata_en(),
 		.command_vram_address(vram_address), .command_vram_valid(vram_valid),

@@ -58,7 +58,7 @@ module vdp_command_cache (
 	input				reset_n,
 	input				clk,
 	input				start,
-	input		[17:0]	cache_vram_address,
+	input		[21:0]	cache_vram_address,
 	input				cache_vram_valid,
 	output				cache_vram_ready,
 	input				cache_vram_write,
@@ -67,14 +67,14 @@ module vdp_command_cache (
 	output				cache_vram_rdata_en,
 	input				cache_flush_start,
 	output				cache_flush_end,
-	input		[17:0]	cpu_vram_address,
+	input		[21:0]	cpu_vram_address,
 	input				cpu_vram_valid,
 	output				cpu_vram_ready,
 	input				cpu_vram_write,
 	input		[7:0]	cpu_vram_wdata,
 	output		[7:0]	cpu_vram_rdata,
 	output				cpu_vram_rdata_en,
-	output		[17:0]	command_vram_address,
+	output		[21:0]	command_vram_address,
 	output				command_vram_valid,
 	input				command_vram_ready,
 	output				command_vram_write,
@@ -93,7 +93,7 @@ module vdp_command_cache (
 	localparam [3:0] c_lookup       = 4'd7;
 	localparam [3:0] c_process      = 4'd8;
 
-	reg		[15:0]	ff_address [0:7];
+	reg		[19:0]	ff_address [0:7];
 	reg		[31:0]	ff_data [0:7];
 	reg		[3:0]	ff_mask [0:7];
 	reg		[7:0]	ff_valid;
@@ -107,7 +107,7 @@ module vdp_command_cache (
 	reg		[8:0]	ff_cpu_idle_count;
 	reg				ff_cpu_timer_active;
 	reg		[2:0]	ff_target;
-	reg		[17:0]	ff_pending_address;
+	reg		[21:0]	ff_pending_address;
 	reg				ff_pending_cpu;
 	reg				ff_pending_write;
 	reg		[7:0]	ff_pending_wdata;
@@ -118,14 +118,14 @@ module vdp_command_cache (
 	reg				ff_cache_rdata_en;
 	reg		[7:0]	ff_cpu_rdata;
 	reg				ff_cpu_rdata_en;
-	reg		[15:0]	ff_vram_address;
+	reg		[19:0]	ff_vram_address;
 	reg				ff_vram_valid;
 	reg				ff_vram_write;
 	reg		[31:0]	ff_vram_wdata;
 	reg		[3:0]	ff_vram_mask;
 
-	wire		[17:0]	w_address;
-	wire		[17:0]	w_input_address;
+	wire		[21:0]	w_address;
+	wire		[21:0]	w_input_address;
 	wire		[7:0]	w_hit;
 	wire		[7:0]	w_free;
 	wire		[7:0]	w_oldest;
@@ -146,7 +146,7 @@ module vdp_command_cache (
 	assign w_address = ff_pending_address;
 	generate
 		for( line = 0; line < 8; line = line + 1 ) begin: gen_lookup
-			assign w_hit[line]    = ff_valid[line] && ff_address[line] == w_address[17:2];
+			assign w_hit[line]    = ff_valid[line] && ff_address[line] == w_address[21:2];
 			assign w_free[line]   = !ff_valid[line];
 			assign w_oldest[line] = ff_age[line] == 3'd7;
 		end
@@ -194,7 +194,7 @@ module vdp_command_cache (
 			ff_cpu_idle_count   <= 9'd0;
 			ff_cpu_timer_active <= 1'b0;
 			ff_target           <= 3'd0;
-			ff_pending_address  <= 18'd0;
+			ff_pending_address  <= 22'd0;
 			ff_pending_cpu      <= 1'b0;
 			ff_pending_write    <= 1'b0;
 			ff_pending_wdata    <= 8'd0;
@@ -205,13 +205,13 @@ module vdp_command_cache (
 			ff_cache_rdata_en   <= 1'b0;
 			ff_cpu_rdata        <= 8'd0;
 			ff_cpu_rdata_en     <= 1'b0;
-			ff_vram_address     <= 16'd0;
+			ff_vram_address     <= 20'd0;
 			ff_vram_valid       <= 1'b0;
 			ff_vram_write       <= 1'b0;
 			ff_vram_wdata       <= 32'd0;
 			ff_vram_mask        <= 4'b1111;
 			for( index = 0; index < 8; index = index + 1 ) begin
-				ff_address[index] <= 16'd0;
+				ff_address[index] <= 20'd0;
 				ff_data[index]    <= 32'd0;
 				ff_mask[index]    <= 4'b1111;
 				ff_age[index]     <= 3'd0;
@@ -281,7 +281,7 @@ module vdp_command_cache (
 							ff_state        <= c_evict_write;
 						end
 						if( !ff_lookup_hit ) begin
-							ff_address[ff_target] <= ff_pending_address[17:2];
+							ff_address[ff_target] <= ff_pending_address[21:2];
 							ff_mask[ff_target]    <= 4'b1111;
 							ff_loaded[ff_target]  <= 1'b0;
 						end
@@ -302,7 +302,7 @@ module vdp_command_cache (
 					end
 					else begin
 						if( !ff_lookup_hit ) begin
-							ff_address[ff_target] <= ff_pending_address[17:2];
+							ff_address[ff_target] <= ff_pending_address[21:2];
 							ff_mask[ff_target]    <= 4'b1111;
 							ff_loaded[ff_target]  <= 1'b0;
 							ff_valid[ff_target]   <= 1'b1;
@@ -316,7 +316,7 @@ module vdp_command_cache (
 							ff_state        <= c_evict_read;
 						end
 						else begin
-							ff_vram_address <= ff_pending_address[17:2];
+							ff_vram_address <= ff_pending_address[21:2];
 							ff_vram_valid   <= 1'b1;
 							ff_vram_write   <= 1'b0;
 							ff_vram_mask    <= 4'b1111;
@@ -332,7 +332,7 @@ module vdp_command_cache (
 			end
 			c_evict_read: begin
 				if( ff_vram_valid && command_vram_ready ) begin
-					ff_vram_address <= ff_pending_address[17:2];
+					ff_vram_address <= ff_pending_address[21:2];
 					ff_vram_write   <= 1'b0;
 					ff_vram_mask    <= 4'b1111;
 					ff_state        <= c_read_request;

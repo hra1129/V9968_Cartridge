@@ -38,6 +38,12 @@ module tangnano20k_vdp_cartridge (
 	output			ws2812_led,		//	PIN79
 	input	[1:0]	button,			//	PIN87, 88	KEY2, KEY1
 
+	//	I2S audio input
+	input			i2s_bclk,		//	PIN56
+	input			i2s_lrclk,		//	PIN55
+	input			i2s_din,		//	PIN54
+	input			i2s_en,			//	PIN51
+
 	//	Config ROM (BANK3)
 	output			mspi_cs,		//	PIN60
 	output			mspi_clk,		//	PIN59
@@ -340,7 +346,7 @@ module tangnano20k_vdp_cartridge (
 		.bus_rdata_en		( w_bus_vdp_rdata_en		),
 		.bus_write_done		( w_bus_vdp_write_done		),
 		.int_n				( w_int_n					),
-		.vram_address		( w_sdram_address[17:2]		),
+		.vram_address		( w_sdram_address[21:2]		),
 		.vram_write			( w_sdram_write				),
 		.vram_valid			( w_sdram_valid				),
 		.vram_wdata			( w_sdram_wdata				),
@@ -371,7 +377,7 @@ module tangnano20k_vdp_cartridge (
 		.pulse7				( w_pulse7					)
 	);
 
-	assign w_sdram_address[22:18]	= 5'd0;
+	assign w_sdram_address[22]	= 1'b0;
 
 	// --------------------------------------------------------------------
 	//	HDMI
@@ -444,9 +450,20 @@ module tangnano20k_vdp_cartridge (
 		.clock				( tmds_clk_p				),		//	TMDS clock
 		.clock_n			( 							)		//	unused: LVDS25 output by CST
 	);
-	assign w_pcm_fs = 1'b0;
-	assign w_pcm_l	= 24'd0;
-	assign w_pcm_r	= 24'd0;
+	// --------------------------------------------------------------------
+	//	I2S audio input (to HDMI audio)
+	// --------------------------------------------------------------------
+	ip_i2s_receiver u_i2s_receiver (
+		.reset_n			( reset_n					),
+		.clk				( clk85m					),
+		.i2s_en				( i2s_en					),
+		.i2s_bclk			( i2s_bclk					),
+		.i2s_lrclk			( i2s_lrclk					),
+		.i2s_din			( i2s_din					),
+		.pcm_fs				( w_pcm_fs					),
+		.pcm_l				( w_pcm_l					),
+		.pcm_r				( w_pcm_r					)
+	);
 
 	// --------------------------------------------------------------------
 	//	SDRAM

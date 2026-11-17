@@ -37,11 +37,11 @@ module tb_geo3d_hmmv;
     wire command_execute, border_detect, transfer_ready;
     wire [7:0] status_color;
     wire [8:0] border_position;
-    wire [17:0] cache_address;
+    wire [21:0] cache_address;
     wire cache_valid, cache_ready, cache_write, cache_rdata_en;
     wire [7:0] cache_wdata, cache_rdata;
     wire cache_flush_start, cache_flush_end;
-    wire [17:0] memory_address;
+    wire [21:0] memory_address;
     wire memory_valid, memory_write;
     wire [31:0] memory_wdata;
     wire [3:0] memory_wdata_mask;
@@ -79,7 +79,8 @@ module tb_geo3d_hmmv;
         .screen_mode(screen_mode), .reg_yjk_mode(yjk_mode), .vram_interleave(interleave),
         .reg_text_back_color(8'd0), .reg_command_enable(1'b0),
         .reg_command_high_speed_mode(high_speed), .reg_ext_command_mode(ext_mode),
-        .reg_vram256k_mode(vram256k), .vram_access_mask(), .intr_command_end()
+        .reg_vram256k_mode(vram256k), .reg_command_src_bank(4'd0), .reg_command_dst_bank(4'd0),
+        .vram_access_mask(), .intr_command_end()
     );
 
     integer cycles = 0;
@@ -91,7 +92,7 @@ module tb_geo3d_hmmv;
         .cache_vram_wdata(cache_wdata), .cache_vram_rdata(cache_rdata),
         .cache_vram_rdata_en(cache_rdata_en),
         .cache_flush_start(cache_flush_start), .cache_flush_end(cache_flush_end),
-        .cpu_vram_address(18'd0), .cpu_vram_valid(1'b0), .cpu_vram_ready(),
+        .cpu_vram_address(22'd0), .cpu_vram_valid(1'b0), .cpu_vram_ready(),
         .cpu_vram_write(1'b0), .cpu_vram_wdata(8'd0),
         .cpu_vram_rdata(), .cpu_vram_rdata_en(),
         .command_vram_address(memory_address), .command_vram_valid(memory_valid),

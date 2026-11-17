@@ -11,7 +11,12 @@ module tb;
 	reg vram_interleave = 1'b0;
 	reg vram256k_mode = 1'b0;
 	reg hold_memory = 1'b0;
-	wire [17:0] cache_address;
+	reg [3:0] src_bank = 4'd0;
+	reg [3:0] dst_bank = 4'd0;
+	reg bank_check = 1'b0;
+	integer bank_reads = 0;
+	integer bank_writes = 0;
+	wire [21:0] cache_address;
 	wire cache_valid;
 	wire cache_write;
 	wire [7:0] cache_wdata;
@@ -47,7 +52,8 @@ module tb;
 		.reg_yjk_mode(1'b0), .vram_interleave(vram_interleave),
 		.reg_text_back_color(8'd0), .reg_command_enable(1'b1),
 		.reg_command_high_speed_mode(1'b1), .reg_ext_command_mode(1'b1),
-		.reg_vram256k_mode(vram256k_mode), .vram_access_mask(), .intr_command_end()
+		.reg_vram256k_mode(vram256k_mode), .reg_command_src_bank(src_bank), .reg_command_dst_bank(dst_bank),
+		.vram_access_mask(), .intr_command_end()
 	);
 
 	always @(posedge clk) begin
@@ -68,13 +74,23 @@ module tb;
 					cache_rdata_en <= 1'b1;
 				end
 			end
+			if (cache_valid && cache_ready && bank_check) begin
+				if (cache_write) begin
+					if (cache_address[21:18] !== dst_bank) $fatal(1, "Write used bank %h instead of %h", cache_address[21:18], dst_bank);
+					bank_writes = bank_writes + 1;
+				end
+				else begin
+					if (cache_address[21:18] !== src_bank) $fatal(1, "Read used bank %h instead of %h", cache_address[21:18], src_bank);
+					bank_reads = bank_reads + 1;
+				end
+			end
 			if (cache_valid && cache_ready) begin
 				if (cache_write) begin
-					memory[cache_address] <= cache_wdata;
+					memory[cache_address[17:0]] <= cache_wdata;
 				end
 				else begin
 					if (pending_cycles != 0) $fatal(1, "Overlapping memory reads");
-					pending_data <= memory[cache_address];
+					pending_data <= memory[cache_address[17:0]];
 					pending_cycles <= 3'd3;
 				end
 			end
@@ -435,6 +451,28 @@ module tb;
 		test_lfmm_top_clip(10'h008, 1'b0, 1'b0, 1'b0, 1'b0, 5, 1, 4);
 		test_lfmm_top_clip(10'h008, 1'b0, 1'b0, 1'b0, 1'b0, 5, 0, 0);
 		test_lfmm_top_clip(10'h020, 1'b1, 1'b0, 1'b0, 1'b0, 5, 1, 0);
+
+		reset_case(10'h008, 1'b0);
+		memory[0] = 8'h5A;
+		memory[1] = 8'hC3;
+		memory[128] = 8'h00;
+		memory[129] = 8'h00;
+		src_bank = 4'h3;
+		dst_bank = 4'hA;
+		bank_check = 1'b1;
+		set_source(9'd0);
+		set_destination(9'd0);
+		write_reg(6'd38, 8'd1);
+		set_size(9'd4);
+		write_reg(6'd45, 8'h00);
+		write_reg(6'd46, 8'hD0);
+		wait_command_end();
+		bank_check = 1'b0;
+		src_bank = 4'd0;
+		dst_bank = 4'd0;
+		if (memory[128] !== 8'h5A || memory[129] !== 8'hC3 || bank_reads < 2 || bank_writes < 2)
+			$fatal(1, "HMMM bank copy: bytes=%h,%h reads=%0d writes=%0d", memory[128], memory[129], bank_reads, bank_writes);
+		$display("Command source/destination bank (R#30) passed");
 
 		test_passed = 1'b1;
 		$display("VDP command tests PASSED");

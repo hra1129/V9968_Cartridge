@@ -62,6 +62,8 @@ module vdp_vram_interface (
 	input				initial_busy,
 	input		[3:0]	h_count,
 	input				vram_interleave,
+	input		[3:0]	reg_bg_bank,
+	input		[3:0]	reg_sprite_bank,
 
 	input		[17:0]	screen_mode_vram_address,
 	input				screen_mode_vram_valid,
@@ -72,7 +74,7 @@ module vdp_vram_interface (
 	output		[31:0]	sprite_vram_rdata,
 	output		[7:0]	sprite_vram_rdata8,
 
-	input		[17:0]	command_vram_address,
+	input		[21:0]	command_vram_address,
 	input				command_vram_valid,
 	output				command_vram_ready,
 	input				command_vram_write,
@@ -81,7 +83,7 @@ module vdp_vram_interface (
 	output		[31:0]	command_vram_rdata,
 	output				command_vram_rdata_en,
 
-	input		[17:0]	cpu_vram_address,
+	input		[21:0]	cpu_vram_address,
 	input				cpu_vram_valid,
 	output				cpu_vram_ready,
 	input				cpu_vram_write,
@@ -89,7 +91,7 @@ module vdp_vram_interface (
 	output		[7:0]	cpu_vram_rdata,
 	output				cpu_vram_rdata_en,
 
-	output		[17:2]	vram_address,
+	output		[21:2]	vram_address,
 	output				vram_valid,
 	output				vram_write,
 	output		[31:0]	vram_wdata,
@@ -107,11 +109,11 @@ module vdp_vram_interface (
 	localparam			c_timming_a	= 4'd1;
 	localparam			c_timming_b	= 4'd9;
 
-	wire		[17:0]	w_cpu_vram_address;
-	wire		[17:0]	w_sprite_vram_address;
-	wire		[17:0]	w_screen_mode_vram_address;
-	wire		[17:0]	w_command_vram_address;
-	reg			[17:0]	ff_vram_address;
+	wire		[21:0]	w_cpu_vram_address;
+	wire		[21:0]	w_sprite_vram_address;
+	wire		[21:0]	w_screen_mode_vram_address;
+	wire		[21:0]	w_command_vram_address;
+	reg			[21:0]	ff_vram_address;
 	reg			[1:0]	ff_vram_byte_sel;
 	reg					ff_vram_valid;
 	reg					ff_vram_write;
@@ -197,14 +199,14 @@ module vdp_vram_interface (
 		end
 	end
 
-	assign w_cpu_vram_address				= vram_interleave ? { cpu_vram_address[17],         cpu_vram_address[0]        , cpu_vram_address[16:1]         }: cpu_vram_address;
-	assign w_sprite_vram_address			= vram_interleave ? { sprite_vram_address[17],      sprite_vram_address[0]     , sprite_vram_address[16:1]      }: sprite_vram_address;
-	assign w_screen_mode_vram_address		= vram_interleave ? { screen_mode_vram_address[17], screen_mode_vram_address[0], screen_mode_vram_address[16:1] }: screen_mode_vram_address;
+	assign w_cpu_vram_address				= vram_interleave ? { cpu_vram_address[21:17],      cpu_vram_address[0]        , cpu_vram_address[16:1]         }: cpu_vram_address;
+	assign w_sprite_vram_address			= { reg_sprite_bank, vram_interleave ? { sprite_vram_address[17],      sprite_vram_address[0]     , sprite_vram_address[16:1]      }: sprite_vram_address };
+	assign w_screen_mode_vram_address		= { reg_bg_bank,     vram_interleave ? { screen_mode_vram_address[17], screen_mode_vram_address[0], screen_mode_vram_address[16:1] }: screen_mode_vram_address };
 	assign w_command_vram_address			= command_vram_address;		//	※VDP Command は、VDP Command 内部でインターリーブ処理してるのでここではやらない 
 
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
-			ff_vram_address		<= 18'd0;
+			ff_vram_address		<= 22'd0;
 			ff_vram_valid		<= 1'b0;
 			ff_vram_write		<= 1'b0;
 			ff_vram_wdata		<= 8'd0;
@@ -314,7 +316,7 @@ module vdp_vram_interface (
 	assign command_vram_rdata		= ff_command_vram_rdata;
 	assign command_vram_rdata_en	= ff_command_vram_rdata_en;
 
-	assign vram_address				= ff_vram_address[17:2];
+	assign vram_address				= ff_vram_address[21:2];
 	assign vram_valid				= ff_vram_valid;
 	assign vram_write				= ff_vram_write;
 	assign vram_wdata				= ff_vram_wdata;

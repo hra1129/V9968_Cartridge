@@ -154,6 +154,11 @@ module vdp_cpu_interface (
 	output				reg_vram256k_mode,
 	output				reg_sprite16_mode,
 	output				reg_flat_interlace_mode,
+	output	[3:0]		reg_cpu_bank,
+	output	[3:0]		reg_bg_bank,
+	output	[3:0]		reg_sprite_bank,
+	output	[3:0]		reg_command_src_bank,
+	output	[3:0]		reg_command_dst_bank,
 
 	input	[1:0]		button,
 	output				pulse0,
@@ -233,6 +238,11 @@ module vdp_cpu_interface (
 	reg					ff_flat_interlace_mode;
 	reg					ff_force_highspeed;
 	reg					ff_v9958_mode;
+	reg		[3:0]		ff_cpu_bank;
+	reg		[3:0]		ff_bg_bank;
+	reg		[3:0]		ff_sprite_bank;
+	reg		[3:0]		ff_command_src_bank;
+	reg		[3:0]		ff_command_dst_bank;
 
 	reg					ff_2nd_access;
 	reg		[7:0]		ff_1st_byte;
@@ -544,6 +554,11 @@ module vdp_cpu_interface (
 			ff_command_end_interrupt_enable <= 1'b0;
 			ff_flat_interlace_mode <= 1'b0;
 			ff_v9958_mode <= 1'b1;
+			ff_cpu_bank <= 4'd0;
+			ff_bg_bank <= 4'd0;
+			ff_sprite_bank <= 4'd0;
+			ff_command_src_bank <= 4'd0;
+			ff_command_dst_bank <= 4'd0;
 		end
 		else if( ff_register_write ) begin
 			case( ff_register_num )
@@ -683,6 +698,11 @@ module vdp_cpu_interface (
 							ff_sprite_pattern_generator_table_base[17] <= 1'b0;
 							ff_color_table_base[17] <= 1'b0;
 							ff_sprite_attribute_table_base[17] <= 1'b0;
+							ff_cpu_bank <= 4'd0;
+							ff_bg_bank <= 4'd0;
+							ff_sprite_bank <= 4'd0;
+							ff_command_src_bank <= 4'd0;
+							ff_command_dst_bank <= 4'd0;
 						end
 					end
 				end
@@ -708,6 +728,26 @@ module vdp_cpu_interface (
 			8'd27:	//	R#27 = [N/A][N/A][N/A][N/A][N/A][HO2][HO1][HO0]
 				begin
 					ff_horizontal_offset_l <= ff_1st_byte[2:0];
+				end
+			8'd28:	//	R#28 = [N/A][N/A][N/A][N/A][CB3][CB2][CB1][CB0]	CPU access VRAM bank (A21..A18)
+				begin
+					if( !ff_lock_extregs && !ff_v9958_mode ) begin
+						ff_cpu_bank <= ff_1st_byte[3:0];
+					end
+				end
+			8'd29:	//	R#29 = [SB3][SB2][SB1][SB0][BB3][BB2][BB1][BB0]	Sprite / Background VRAM bank
+				begin
+					if( !ff_lock_extregs && !ff_v9958_mode ) begin
+						ff_bg_bank <= ff_1st_byte[3:0];
+						ff_sprite_bank <= ff_1st_byte[7:4];
+					end
+				end
+			8'd30:	//	R#30 = [DB3][DB2][DB1][DB0][SB3][SB2][SB1][SB0]	VDP command destination / source VRAM bank
+				begin
+					if( !ff_lock_extregs && !ff_v9958_mode ) begin
+						ff_command_src_bank <= ff_1st_byte[3:0];
+						ff_command_dst_bank <= ff_1st_byte[7:4];
+					end
 				end
 			default:
 				begin
@@ -975,4 +1015,9 @@ module vdp_cpu_interface (
 	assign reg_vram256k_mode						= ~ff_v9958_mode;
 	assign reg_sprite16_mode						= ff_sprite16_mode;
 	assign reg_flat_interlace_mode					= ff_flat_interlace_mode;
+	assign reg_cpu_bank								= ff_cpu_bank;
+	assign reg_bg_bank								= ff_bg_bank;
+	assign reg_sprite_bank							= ff_sprite_bank;
+	assign reg_command_src_bank						= ff_command_src_bank;
+	assign reg_command_dst_bank						= ff_command_dst_bank;
 endmodule
