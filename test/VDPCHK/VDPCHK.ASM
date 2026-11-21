@@ -14,7 +14,8 @@
 ;	Sections for V9968 only are skipped when no V9968 is detected.
 ;
 ;	Assemble with zma:  zma VDPCHK.ASM VDPCHK.COM
-;	Target: MSX2+ (V9958) or V9968, 128 KB VRAM, MSX-DOS 1 or 2.
+;	Target: MSX2+ (V9958) or V9968 (4MB VRAM banks are tested in the last section),
+;	MSX-DOS 1 or 2.
 ; -----------------------------------------------------------------------------
 
 BDOS		:= 0x0005
@@ -149,7 +150,12 @@ op_table:
 		dw		op_cpuw			; 0D
 		dw		op_cpur			; 0E
 		dw		op_section		; 0F
-OPCODE_COUNT	:= 16
+		dw		op_frame		; 10
+		dw		op_cpuwc		; 11
+		dw		op_cpurc		; 12
+		dw		op_bfillp		; 13
+		dw		op_bread		; 14
+OPCODE_COUNT	:= 21
 
 ; -----------------------------------------------------------------------------
 ;	script fetch
@@ -183,6 +189,7 @@ fetch_a24:					; va_lo/va_mid/va_hi
 
 fetch_len:					; rem = len16 (0 means 65536)
 		call	fetch_w
+set_len:					; rem = HL (0 means 65536)
 		ld		[rem_l], hl
 		ld		a, h
 		or		a, l
@@ -590,10 +597,17 @@ fillp_mul_next:
 		djnz	fillp_mul
 		ld		d, a
 		ld		a, [va_hi]
-		and		a, 0x01
+		rrca
+		ld		a, d
+		jr		nc, fillp_no_hi0
+		add		a, 0x9B
+fillp_no_hi0:
+		ld		d, a
+		ld		a, [va_hi]
+		and		a, 0x02
 		ld		a, d
 		jr		z, fillp_no_hi
-		add		a, 0x9B
+		add		a, 0x36			; 2 * 9Bh (A17)
 fillp_no_hi:
 		ld		d, a			; D = off
 		ld		a, [va_lo]
@@ -685,6 +699,126 @@ op_cpur:
 		call	set_addr
 		pop		bc
 		jr		read_chunk
+
+;	continue writing / reading at the current VRAM address (no address setup)
+op_cpuwc:
+		call	fetch_w
+		push	hl
+		call	fetch_b
+		ld		l, a
+		ld		a, [tblpage]
+		ld		h, a
+		pop		bc
+		jr		cpuw_loop
+
+op_cpurc:
+		call	fetch_w
+		ld		b, h
+		ld		c, l
+		jp		read_chunk
+
+; --- the same block in the banks of a mask: R#28 = 0..15, then restored ----
+op_bfillp:
+		call	bank_args
+		call	fetch_b
+		ld		[bnk_seed], a
+		call	fetch_b
+		ld		[bnk_rest], a
+		ld		hl, fillp_chunk
+		ld		a, 0x40
+		jr		bank_run
+
+op_bread:
+		call	bank_args
+		call	fetch_b
+		ld		[bnk_rest], a
+		ld		hl, read_chunk
+		xor		a, a
+bank_run:
+		ld		[chunk_fn], hl
+		ld		[chunk_rw], a
+		xor		a, a
+		ld		[bnk_cur], a
+bank_loop:
+		ld		hl, [bnk_mask]
+		srl		h
+		rr		l
+		ld		[bnk_mask], hl
+		jr		nc, bank_next
+		ld		a, [bnk_cur]
+		ld		b, 28
+		call	wreg
+		ld		hl, [bnk_va]
+		ld		[va_lo], hl
+		ld		a, [bnk_va + 2]
+		ld		[va_hi], a
+		ld		hl, [bnk_len]
+		call	set_len
+		ld		a, [bnk_seed]
+		ld		[seed], a
+		call	chunk_loop
+bank_next:
+		ld		a, [bnk_seed]		; seed of bank k = seed + k * 3Bh
+		add		a, 0x3B
+		ld		[bnk_seed], a
+		ld		a, [bnk_cur]
+		inc		a
+		ld		[bnk_cur], a
+		cp		a, 16
+		jr		c, bank_loop
+		ld		a, [bnk_rest]
+		ld		b, 28
+		jp		wreg
+
+bank_args:
+		call	fetch_a24
+		ld		hl, [va_lo]
+		ld		[bnk_va], hl
+		ld		a, [va_hi]
+		ld		[bnk_va + 2], a
+		call	fetch_w
+		ld		[bnk_len], hl
+		call	fetch_w
+		ld		[bnk_mask], hl
+		ret
+
+; --- wait for one whole frame (sprite collision is collected during it) ------
+;	S#0 is cleared in the vertical blanking, then the next frame is displayed
+op_frame:
+		call	to_init
+		ld		a, 2
+		ld		b, 15
+		call	wreg
+		ld		c, 0x40
+		call	frame_wait		; VR = 1
+		xor		a, a
+		ld		b, 15
+		call	wreg
+		in		a, [VDP_CTRL]		; clear S#0
+		ld		a, 2
+		ld		b, 15
+		call	wreg
+		ld		c, 0x00
+		call	frame_wait		; VR = 0 (display)
+		ld		c, 0x40
+		call	frame_wait		; VR = 1 (frame done)
+		xor		a, a
+		ld		b, 15
+		jp		wreg
+
+;	wait until (S#2 & 40h) == C.  Timeout: cur_to = 1
+frame_wait:
+		in		a, [VDP_CTRL]
+		and		a, 0x40
+		cp		a, c
+		ret		z
+		push	bc
+		call	to_tick
+		pop		bc
+		jr		nz, frame_wait
+		ld		a, 1
+		ld		[cur_to], a
+		jp		to_init			; the remaining waits are bounded again
 
 ; -----------------------------------------------------------------------------
 ;	VDP detection (DI)
@@ -999,6 +1133,12 @@ feed_idx::	db		0
 drain_cnt::	dw		0
 to_outer::	db		0
 to_inner::	dw		0
+bnk_va::	space	3
+bnk_len::	dw		0
+bnk_mask::	dw		0
+bnk_seed::	db		0
+bnk_rest::	db		0
+bnk_cur::	db		0
 fail_list::	space	MAX_FAILS * 2
 
 		include	"VDPCHK.INC"

@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------
 //	test_vdpchk: runs the VDPCHK.COM test script (test/VDPCHK/vdpchk.hex) on the VDP RTL
 //
-//	FILLP / FILLC / READ use a backdoor to the VRAM model after the shared cache has
-//	been flushed.  Registers, status, CPU VRAM access (CPUW/CPUR) and CPU transfers
+//	FILLP / FILLC / READ / BFILLP / BREAD use a backdoor to the 4MB VRAM model (bank =
+//	R#28) after the shared cache has been flushed.  Registers, status, CPU VRAM access (CPUW/CPUR) and CPU transfers
 //	(FEED/DRAIN) go through the bus like on the real machine.
 //
 //	plusargs: +dir=<folder of vdpchk.hex and pat.hex>  +from=<first test>  +to=<last test>
@@ -13,7 +13,7 @@ module tb;
 	reg clk = 0, reset_n = 0; always #5 clk = ~clk;
 	reg [2:0] ba = 0; reg bv = 0, bw = 0; reg [7:0] bd = 0;
 	wire br; wire [7:0] brd; wire brde, bwd, int_n;
-	wire [17:2] va; wire vw, vv, vref; wire [31:0] vwd; wire [3:0] vm; wire [31:0] vrd; wire vre;
+	wire [21:2] va; wire vw, vv, vref; wire [31:0] vwd; wire [3:0] vm; wire [31:0] vrd; wire vre;
 	wire dhs, dvs, den; wire [7:0] dr, dg, db;
 	vdp u (.reset_n(reset_n), .clk(clk), .initial_busy(1'b0),
 		.bus_address(ba), .bus_ioreq(1'b1), .bus_write(bw), .bus_valid(bv), .bus_ready(br), .bus_wdata(bd),
@@ -26,7 +26,7 @@ module tb;
 
 	// --- VRAM model (32 bit words, read latency LAT)
 	localparam LAT = 10;
-	reg [31:0] M [0:65535];
+	reg [31:0] M [0:1048575];		// 4MB = 16 banks x 256KB
 	reg [LAT-1:0] rsr = 0; reg [31:0] rp [0:LAT-1]; integer i;
 	always @(posedge clk) begin
 		if (vv && vw) for (i = 0; i < 4; i = i + 1) if (!vm[i]) M[va][i*8 +: 8] <= vwd[i*8 +: 8];
@@ -56,10 +56,12 @@ module tb;
 	task vreg(input [5:0] r, input [7:0] v); begin out(3'd1, v); out(3'd1, {2'b10, r}); end endtask
 	task rstat(input [3:0] n, output [7:0] v); begin vreg(15, {4'd0, n}); inp(3'd1, v); vreg(15, 8'd0); end endtask
 
-	// --- backdoor (logical address, interleave of the current mode)
-	function [16:0] phys(input [16:0] a); phys = u.w_vram_interleave ? { a[0], a[16:1] } : a; endfunction
-	function [7:0] lrd(input [16:0] a); reg [16:0] p; begin p = phys(a); lrd = M[p[16:2]][p[1:0]*8 +: 8]; end endfunction
-	task lwr(input [16:0] a, input [7:0] v); reg [16:0] p; begin p = phys(a); M[p[16:2]][p[1:0]*8 +: 8] = v; end endtask
+	// --- backdoor (logical address in the R#28 bank, interleave of the current mode)
+	function [21:0] phys(input [17:0] a);
+		phys = { u.reg_cpu_bank, u.w_vram_interleave ? { a[17], a[0], a[16:1] } : a };
+	endfunction
+	function [7:0] lrd(input [17:0] a); reg [21:0] p; begin p = phys(a); lrd = M[p[21:2]][p[1:0]*8 +: 8]; end endfunction
+	task lwr(input [17:0] a, input [7:0] v); reg [21:0] p; begin p = phys(a); M[p[21:2]][p[1:0]*8 +: 8] = v; end endtask
 	task cache_quiet;
 		integer n; begin
 			n = 0;
@@ -78,11 +80,12 @@ module tb;
 	reg [15:0] CRC_T [0:255];
 	integer pc, from_n, to_n, cur, total, ng, tmo, fd, k, n, lim, c;
 	reg [15:0] crc, exp_crc;
-	reg [7:0] lg [0:262143];
+	reg [7:0] lg [0:524287];
 	integer lgn;
 	reg active;
 	reg [7:0] op, a0, a1, s, v;
-	reg [16:0] addr;
+	reg [17:0] addr;
+	reg [15:0] bmask; reg [7:0] brest, bseed; integer bk;
 	integer len;
 	reg [1023:0] dir, fname;
 
@@ -91,13 +94,29 @@ module tb;
 	task log_b(input [7:0] b);
 		begin
 			crc = {crc[7:0], 8'd0} ^ CRC_T[crc[15:8] ^ b];
-			if (lgn < 262144) lg[lgn] = b;
+			if (lgn < 524288) lg[lgn] = b;
 			lgn = lgn + 1;
 		end
 	endtask
 	task fetch_a24_len;
 		reg [7:0] l, m, h; reg [15:0] w;
-		begin l = fb(); m = fb(); h = fb(); addr = {h[0], m, l}; w = fw(); len = (w == 0) ? 65536 : w; end
+		begin l = fb(); m = fb(); h = fb(); addr = {h[1:0], m, l}; w = fw(); len = (w == 0) ? 65536 : w; end
+	endtask
+	task fillp(input [7:0] sd);
+		begin
+			for (k = 0; k < len; k = k + 1) begin
+				n = addr + k;
+				c = n >> 8;
+				lwr(n, PAT[((n & 255) + (c & 255) * 8'h4D + (c >> 8) * 8'h9B + sd) & 255]);
+			end
+		end
+	endtask
+	task frame_wait(input [7:0] want);
+		begin
+			n = 0; inp(3'd1, s);
+			while ((s & 8'h40) != want && n < lim) begin n = n + 1; inp(3'd1, s); end
+			if ((s & 8'h40) != want) tmo = 1;
+		end
 	endtask
 	task timeout_stop; begin tmo = 1; vreg(46, 8'd0); vreg(15, 8'd0); end endtask
 	task finish_run;
@@ -109,7 +128,7 @@ module tb;
 	endtask
 
 	initial begin
-		for (i = 0; i < 65536; i = i + 1) M[i] = 32'h0;
+		for (i = 0; i < 1048576; i = i + 1) M[i] = 32'h0;
 		for (i = 0; i < 256; i = i + 1) begin
 			c = i << 8;
 			for (k = 0; k < 8; k = k + 1) c = (c & 16'h8000) ? ((c << 1) ^ 16'h1021) : (c << 1);
@@ -150,7 +169,7 @@ module tb;
 						$display("NG %0d%s exp_crc=%04h got=%04h len=%0d at %0t", cur, tmo ? "T" : "", exp_crc, crc, lgn, $time);
 						$sformat(fname, "fail_%0d.hex", cur);
 						fd = $fopen(fname, "w");
-						for (k = 0; k < lgn && k < 262144; k = k + 1) $fdisplay(fd, "%02h", lg[k]);
+						for (k = 0; k < lgn && k < 524288; k = k + 1) $fdisplay(fd, "%02h", lg[k]);
 						$fclose(fd);
 					end
 					else if (cur % 50 == 0) $display("ok %0d at %0t", cur, $time);
@@ -203,14 +222,7 @@ module tb;
 			end
 			8'h0A: begin
 				fetch_a24_len; a0 = fb();
-				if (active) begin
-					cache_quiet;
-					for (k = 0; k < len; k = k + 1) begin
-						n = addr + k;
-						c = n >> 8;
-						lwr(n, PAT[((n & 255) + (c & 255) * 8'h4D + (c >> 8) * 8'h9B + a0) & 255]);
-					end
-				end
+				if (active) begin cache_quiet; fillp(a0); end
 			end
 			8'h0B: begin
 				fetch_a24_len; a0 = fb();
@@ -223,18 +235,49 @@ module tb;
 			8'h0D: begin
 				fetch_a24_len; a0 = fb();
 				if (active) begin
-					vreg(14, {5'd0, addr[16:14]}); out(3'd1, addr[7:0]); out(3'd1, {2'b01, addr[13:8]});
+					vreg(14, {4'd0, addr[17:14]}); out(3'd1, addr[7:0]); out(3'd1, {2'b01, addr[13:8]});
 					for (k = 0; k < len; k = k + 1) out(3'd0, PAT[(a0 + k) & 255]);
 				end
 			end
 			8'h0E: begin
 				fetch_a24_len;
 				if (active) begin
-					vreg(14, {5'd0, addr[16:14]}); out(3'd1, addr[7:0]); out(3'd1, {2'b00, addr[13:8]});
+					vreg(14, {4'd0, addr[17:14]}); out(3'd1, addr[7:0]); out(3'd1, {2'b00, addr[13:8]});
 					for (k = 0; k < len; k = k + 1) begin inp(3'd0, v); log_b(v); end
 				end
 			end
 			8'h0F: begin a0 = fb(); n = fw(); n = fw(); end		// V9968 sections always run here
+			8'h10: if (active) begin			// FRAME: clear S#0 in VBLANK, wait one whole frame
+				vreg(15, 8'd2); frame_wait(8'h40);
+				vreg(15, 8'd0); inp(3'd1, s);
+				vreg(15, 8'd2); frame_wait(8'h00); frame_wait(8'h40);
+				vreg(15, 8'd0);
+			end
+			8'h11: begin					// CPUWC: continue writing
+				n = fw(); len = n; a0 = fb();
+				if (active) for (k = 0; k < len; k = k + 1) out(3'd0, PAT[(a0 + k) & 255]);
+			end
+			8'h12: begin					// CPURC: continue reading
+				n = fw(); len = n;
+				if (active) for (k = 0; k < len; k = k + 1) begin inp(3'd0, v); log_b(v); end
+			end
+			8'h13, 8'h14: begin			// BFILLP / BREAD: the same block in every bank of the mask
+				fetch_a24_len; bmask = fw();
+				if (op == 8'h13) bseed = fb();
+				brest = fb();
+				if (active) begin
+					for (bk = 0; bk < 16; bk = bk + 1) begin
+						if (bmask[bk]) begin
+							vreg(28, bk[7:0]);
+							cache_quiet;
+							if (op == 8'h13) fillp(bseed);
+							else for (k = 0; k < len; k = k + 1) log_b(lrd(addr + k));
+						end
+						bseed = bseed + 8'h3B;
+					end
+				end
+				vreg(28, brest);
+			end
 			default: begin $display("SCRIPT ERROR op=%02h at %0d", op, pc - 1); $finish; end
 			endcase
 		end
