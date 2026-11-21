@@ -171,7 +171,7 @@ def main():
                 prefix='vdpdiag_', suffix='.asm', dir=HERE, delete=False) as f:
             name = f.name
             f.write(source)
-        subprocess.run([str(ZMA), name, 'VDPDIAG.COM'], cwd=HERE, check=True)
+        subprocess.run([str(ZMA), '-DEDGE_TEST=0', name, 'VDPDIAG.COM'], cwd=HERE, check=True)
     finally:
         for path in (name, page_name):
             if path is not None:

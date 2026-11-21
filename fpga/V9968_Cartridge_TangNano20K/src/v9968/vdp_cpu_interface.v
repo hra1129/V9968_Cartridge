@@ -861,7 +861,16 @@ module vdp_cpu_interface (
 				ff_bus_rdata_en	<= 1'b1;
 			end
 			else if( ff_port1 ) begin
-				ff_bus_rdata	<= ff_status_register;
+				//	ACK と同時に返す F/FH は、1クロック前のステータスではなく現在のフラグを使う。
+				if( ff_status_register_pointer == 4'd0 ) begin
+					ff_bus_rdata <= { ff_frame_interrupt, ff_status_register[6] & ~ff_frame_interrupt, ff_status_register[5:0] };
+				end
+				else if( ff_status_register_pointer == 4'd1 ) begin
+					ff_bus_rdata <= { ff_status_register[7:1], ff_line_interrupt };
+				end
+				else begin
+					ff_bus_rdata <= ff_status_register;
+				end
 				ff_bus_rdata_en	<= 1'b1;
 			end
 			else if( ff_port4 ) begin
@@ -896,53 +905,38 @@ module vdp_cpu_interface (
 			ff_command_end_interrupt	<= 1'b0;
 			ff_lock_extregs				<= 1'b1;
 		end
-		else if( w_read && ff_port1 ) begin
-			if( ff_status_register_pointer == 4'd0 ) begin
-				//	Clear frame interrupt flag
-				ff_frame_interrupt <= 1'b0;
-			end
-			else if( ff_status_register_pointer == 4'd1 ) begin
-				//	Clear line interrupt flag
-				ff_line_interrupt <= 1'b0;
-			end
-		end
-		else if( w_write && ff_port4 ) begin
-			if( ff_bus_wdata[0] == 1'b1 ) begin
-				//	Clear frame interrupt flag
-				ff_frame_interrupt <= 1'b0;
-			end
-			if( ff_bus_wdata[1] == 1'b1 ) begin
-				//	Clear line interrupt flag
-				ff_line_interrupt <= 1'b0;
-			end
-			if( ff_bus_wdata[2] == 1'b1 ) begin
-				//	Clear command end interrupt flag
-				ff_command_end_interrupt <= 1'b0;
-			end
-			ff_lock_extregs <= ff_bus_wdata[7];
-		end
 		else begin
-			if( intr_frame ) begin
-				//	Happend line interrupt
-				ff_frame_interrupt <= 1'b1;
+			if( w_write && ff_port4 ) begin
+				ff_lock_extregs <= ff_bus_wdata[7];
 			end
 
-			//	FH が次フレームへ持ち越されると、IE1=1 にした瞬間に割り込みが入ってしまう
-			//	(ZANAC EX, Space Manbow)。VSYNC と R#0/R#19 書き込みでクリアする。
-			if( clear_line_interrupt || intr_frame ) begin
-				ff_line_interrupt <= 1'b0;
+			if( intr_frame ) begin
+				ff_frame_interrupt <= 1'b1;
 			end
-			else if( ff_register_write && (ff_register_num == 6'd0 || ff_register_num == 6'd19) ) begin
+			else if( (w_read && ff_port1 && ff_status_register_pointer == 4'd0) ||
+			         (w_write && ff_port4 && ff_bus_wdata[0]) ) begin
+				ff_frame_interrupt <= 1'b0;
+			end
+
+			//	IE1=0 の間は VSYNC で古い FH をクリアし、IE1=1 の保留中 FH は ACK まで保持する。
+			//	R#0/R#19 の書き込みでも FH をクリアする (ZANAC EX, Space Manbow)。
+			if( ((clear_line_interrupt || intr_frame) && !ff_line_interrupt_enable) ||
+			    (ff_register_write && (ff_register_num == 6'd0 || ff_register_num == 6'd19)) ) begin
 				ff_line_interrupt <= 1'b0;
 			end
 			else if( intr_line ) begin
-				//	Happend line interrupt
 				ff_line_interrupt <= 1'b1;
+			end
+			else if( (w_read && ff_port1 && ff_status_register_pointer == 4'd1) ||
+			         (w_write && ff_port4 && ff_bus_wdata[1]) ) begin
+				ff_line_interrupt <= 1'b0;
 			end
 
 			if( intr_command_end ) begin
-				//	Happend line interrupt
 				ff_command_end_interrupt <= 1'b1;
+			end
+			else if( w_write && ff_port4 && ff_bus_wdata[2] ) begin
+				ff_command_end_interrupt <= 1'b0;
 			end
 		end
 	end
