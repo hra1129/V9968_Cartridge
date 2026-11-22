@@ -2,7 +2,7 @@
 
 このファイルは `gen_vdpchk.py` が生成します。直接編集しないでください。
 
-- 全 1480 項目。VDPCHK.COM が 1～874、VDPREG.COM が 875～1480 を実行し、失敗した項目の番号を最後に表示します。
+- 全 1484 項目。VDPCHK.COM が 1～874、VDPREG.COM が 875～1484 を実行し、失敗した項目の番号を最後に表示します。
 - 期待値は openMSX の VDPCmdEngine (実機で確認された動作) とデータブックに準拠した参照モデルで生成しています。
 - 各項目は試験範囲を既知のパターンで埋めてから実行し、CPU で VRAM を読み戻して CRC で比較します。範囲はコマンドが触れるライン全体と、その上下 1 ラインです。
 - 「V9968 のみ」の節は V9968 を検出できない場合 (V9958 実機など) はスキップし、全数に含めません。
@@ -2109,12 +2109,26 @@
 
 | No. | モード | 内容 |
 |---:|---|---|
-| 1477 | SCREEN5 | LFMM → LFMM (NY): DX 保持, DY=DY0+NY, フォントアドレスが進む |
+| 1477 | SCREEN5 | LFMM → LFMM (R#46 のみ): DX=DX0+8*NX, DY/NY 保持, フォントアドレスが進む |
 | 1478 | SCREEN5 | LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない |
+
+### LFMC 終了時のレジスタ
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1479 | SCREEN5 | LFMC → LFMC (CLR/R#46): DX=DX0+NX, DY/NY 保持 |
+| 1480 | SCREEN5 | LFMC → HMMV → LFMC (DY/NY/CLR): DX=DX0+NX |
 
 ### LFMM 終了時のレジスタ
 
 | No. | モード | 内容 |
 |---:|---|---|
-| 1479 | SCREEN8 | LFMM → LFMM (NY): DX 保持, DY=DY0+NY, フォントアドレスが進む |
-| 1480 | SCREEN8 | LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない |
+| 1481 | SCREEN8 | LFMM → LFMM (R#46 のみ): DX=DX0+8*NX, DY/NY 保持, フォントアドレスが進む |
+| 1482 | SCREEN8 | LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない |
+
+### LFMC 終了時のレジスタ
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1483 | SCREEN8 | LFMC → LFMC (CLR/R#46): DX=DX0+NX, DY/NY 保持 |
+| 1484 | SCREEN8 | LFMC → HMMV → LFMC (DY/NY/CLR): DX=DX0+NX |

@@ -138,7 +138,8 @@ C_POINT, C_PSET, C_SRCH, C_LINE, C_LMMV, C_LMMM, C_LMCM, C_LMMC, \
 	C_HMMV, C_HMMM, C_YMMM, C_HMMC = 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0, \
 	0xC0, 0xD0, 0xE0, 0xF0
 C_LFMM = 0x10			# V9968: font (R#32-R#34, source bank) -> rectangle, FG = R#44, BG = R#12
-CNAME = {0x10: 'LFMM', 0x40: 'POINT', 0x50: 'PSET', 0x60: 'SRCH', 0x70: 'LINE', 0x80: 'LMMV', 0x90: 'LMMM',
+C_LFMC = 0x20			# V9968: font rows written by the CPU to R#44 -> rectangle, FG = R#44 at start
+CNAME = {0x10: 'LFMM', 0x20: 'LFMC',  0x40: 'POINT', 0x50: 'PSET', 0x60: 'SRCH', 0x70: 'LINE', 0x80: 'LMMV', 0x90: 'LMMM',
 	0xA0: 'LMCM', 0xB0: 'LMMC', 0xC0: 'HMMV', 0xD0: 'HMMM', 0xE0: 'YMMM', 0xF0: 'HMMC'}
 
 
@@ -422,8 +423,20 @@ class Engine:
 					fa += 1
 					for b in range(8):
 						self.pset(dx + 8 * ch + b, dy + row, col if (v >> (7 - b)) & 1 else bg, lop)
-			# DX is kept, DY ends below the characters, F (the font address) advances
-			end.update(dy=(dy + ny) & ymask, ny=0, font=fa & 0x3FFFF)
+			# DX moves to the next character, DY and NY are kept, F (the font address) advances
+			end.update(dx=(dx + 8 * nx) & 0x1FF, font=fa & 0x3FFFF)
+		elif c == C_LFMC:
+			# one 8-dot character, one CPU byte per row (MSB = left); data(0) is the
+			# colour written before R#46.  Only NX=8 and fully visible text is modelled.
+			bg = r['bg'] & self.cmask
+			assert not arg & (DIX | DIY) and nx == 8 and 0 < ny
+			assert dx + 8 <= self.ppl and dy + ny <= (self.g.amask + 1) // GEOM[geom][3]
+			for row in range(ny):
+				v = data(row + 1)
+				for b in range(8):
+					self.pset(dx + b, dy + row, col if (v >> (7 - b)) & 1 else bg, lop)
+			# like LFMM: DX moves to the next character, DY and NY are kept
+			end.update(dx=(dx + nx) & 0x1FF)
 		else:
 			raise ValueError('unsupported command %02X' % cmd)
 		return res
@@ -850,8 +863,8 @@ class Gen:
 			self.stat(9, 0)					# clears BD
 		if cc == C_LMCM:
 			self.stat(7, 0)					# clears a stale TR
-		if cc == C_LFMM:
-			self.reg(12, bg)				# LFMM background colour
+		if cc in (C_LFMM, C_LFMC):
+			self.reg(12, bg)				# LFMM/LFMC background colour
 		arg_out = arg | (0x80 if m.fg4 else 0)
 		if write is None:
 			self.b(OP_CMD, sx, sx >> 8, sy, sy >> 8, dx, dx >> 8, dy, dy >> 8,
@@ -873,12 +886,12 @@ class Gen:
 			res = Engine(self).run(m.geom, r, data)
 			self.cr.update(res['end'])
 			self.font = self.cr.pop('font', self.font)
-			if cc in (C_LMMC, C_HMMC):
+			if cc in (C_LMMC, C_HMMC, C_LFMC):
 				self.cr['clr'] = None		# the last byte the CPU wrote
 		if between:
-			assert cc not in (C_LMMC, C_HMMC, C_LMCM)
+			assert cc not in (C_LMMC, C_HMMC, C_LMCM, C_LFMC)
 			between()
-		if cc in (C_LMMC, C_HMMC):
+		if cc in (C_LMMC, C_HMMC, C_LFMC):
 			self.b(OP_FEED, seed)
 		elif cc == C_LMCM and res is not None:
 			self.b(OP_DRAIN)
@@ -1296,13 +1309,23 @@ def suite_regstate(g, m, level):
 
 
 def suite_regstate_lfmm(g, m):
-	"""V9968 LFMM: DX kept, DY = DY0 + NY, NY = 0, the font address advances"""
+	"""V9968 LFMM: DX moves to the next character, DY and NY are kept, the font address advances"""
 	g.sub('LFMM 終了時のレジスタ')
-	RS(g, m, 'LFMM → LFMM (NY): DX 保持, DY=DY0+NY, フォントアドレスが進む', C_LFMM,
-		dict(sx=0x1000, sy=0, dx=16, dy=100, nx=4, ny=8, clr=0x0F, bg=0x04), [(C_LFMM, dict(ny=8))])
+	RS(g, m, 'LFMM → LFMM (R#46 のみ): DX=DX0+8*NX, DY/NY 保持, フォントアドレスが進む', C_LFMM,
+		dict(sx=0x1000, sy=0, dx=16, dy=100, nx=4, ny=8, clr=0x0F, bg=0x04), [(C_LFMM, {})])
 	RS(g, m, 'LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない', C_LFMM,
 		dict(sx=0x2345, sy=1, dx=40, dy=200, nx=3, ny=8, clr=0x0E, bg=0x01),
 		[(C_HMMV, dict(ny=2, clr=0x33)), (C_LFMM, dict(dy=240, ny=16))])
+
+
+def suite_regstate_lfmc(g, m):
+	"""V9968 LFMC: like LFMM, DX moves to the next character, DY and NY are kept"""
+	g.sub('LFMC 終了時のレジスタ')
+	RS(g, m, 'LFMC → LFMC (CLR/R#46): DX=DX0+NX, DY/NY 保持', C_LFMC,
+		dict(dx=16, dy=100, nx=8, ny=8, clr=0x0F, bg=0x04), [(C_LFMC, dict(clr=0x0D)), (C_LFMC, dict(clr=0x0B))])
+	RS(g, m, 'LFMC → HMMV → LFMC (DY/NY/CLR): DX=DX0+NX', C_LFMC,
+		dict(dx=40, dy=200, nx=8, ny=6, clr=0x0E, bg=0x01),
+		[(C_HMMV, dict(ny=2, clr=0x33)), (C_LFMC, dict(dy=240, ny=12, clr=0x09))])
 
 
 def suite_cpu(g):
@@ -1846,6 +1869,7 @@ def build_reg(first):
 		suite_regstate(g, mode(name), 2 if name in ('SCREEN5', 'SCREEN8') else 1)
 	for name in ('SCREEN5', 'SCREEN8'):
 		suite_regstate_lfmm(g, mode(name))
+		suite_regstate_lfmc(g, mode(name))
 	g.finish()
 	return g
 

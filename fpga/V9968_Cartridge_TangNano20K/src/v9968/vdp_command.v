@@ -244,7 +244,6 @@ module vdp_command (
 	wire		[21:0]	w_font_address;
 	wire		[11:0]	w_lfmm_font_advance;
 	wire				w_lfmm_y_end;
-	wire				w_lfmm_finish;
 	reg			[8:0]	ff_lfmm_dx;
 	reg			[12:0]	reg_sy0;
 	wire		[12:0]	w_next_nyb;
@@ -388,8 +387,6 @@ module vdp_command (
 	//	The font address is a CPU-view address, so it is interleaved in the same way as the CPU access
 	assign w_font_address		= { reg_command_src_bank, vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address };
 	assign w_lfmm_y_end			= w_ny_end || w_dy_overflow;
-	//	The last row of the last character (or the right edge on the last row) ends LFMM.
-	assign w_lfmm_finish		= ((w_nx_end && ff_bit_count == 3'd0) || w_dx_overflow) && w_lfmm_y_end;
 	//	ff_ny holds the rows left in the character, including the current one (0 = 1024/2048 rows).
 	assign w_lfmm_font_advance	= reg_vram256k_mode ?
 								  (ff_ny == 11'd0 ? 12'd2048 : {1'b0, ff_ny}) :
@@ -601,7 +598,8 @@ module vdp_command (
 		else if( ff_start ) begin
 			//	コマンド実行開始時
 			ff_sx2	<= { reg_sx, 8'd0 };
-			if( ff_command == c_lfmm ) begin
+			if( ff_command == c_lfmm || ff_command == c_lfmc ) begin
+				//	DY0, to which LFMM/LFMC return DY
 				ff_sy2	<= { 2'd0, ff_dy, 8'd0 };
 			end
 			else if( ff_command == c_lrmm && ff_xhr ) begin
@@ -611,7 +609,7 @@ module vdp_command (
 				ff_sy2	<= ff_sy;
 			end
 		end
-		else if( !ff_command_execute || ff_cache_vram_valid || ff_command == c_lfmm ) begin
+		else if( !ff_command_execute || ff_cache_vram_valid || ff_command == c_lfmm || ff_command == c_lfmc ) begin
 			//	hold
 		end
 		else if( ff_count_valid ) begin
@@ -644,9 +642,19 @@ module vdp_command (
 		else if( register_write && register_num == 6'd37 ) begin
 			reg_dx[8]	<= register_data[0];
 		end
+		else if( ff_command == c_lfmm && ff_command_execute && !ff_cache_vram_valid &&
+				 ff_count_valid && ff_bit_count == 3'd0 && w_lfmm_y_end ) begin
+			//	LFMM leaves DX at the next character, so a string can be drawn one character at a time.
+			reg_dx	<= w_next_dx[8:0];
+		end
+		else if( ff_command == c_lfmc && ff_command_execute && !ff_cache_vram_valid &&
+				 ff_count_valid && w_nx_end && w_lfmm_y_end ) begin
+			//	LFMC too: DX0 +/- NX after the last row (a character cut at the X edge does not advance).
+			reg_dx	<= w_next_dx[8:0];
+		end
 	end
 
-	//	X of the character LFMM is drawing; DX itself is left as it was set.
+	//	X of the character LFMM is drawing (a CPU write to DX does not move the running command).
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
 			ff_lfmm_dx	<= 9'd0;
@@ -759,17 +767,21 @@ module vdp_command (
 			end
 			else if( ff_command == c_lfmm ) begin
 				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
-					if( w_lfmm_y_end && !w_lfmm_finish ) begin
+					//	Every character, the last one included, returns DY to DY0.
+					if( w_lfmm_y_end ) begin
 						ff_dy <= ff_sy2[18:8];
 					end
 					else begin
-						//	The last row steps DY like LMMC (DY0 +/- NY at the end).
 						ff_dy <= w_next_dy[10:0];
 					end
 				end
 				else begin
 					//	hold
 				end
+			end
+			else if( ff_command == c_lfmc && (w_nx_end || w_dx_overflow) && w_lfmm_y_end ) begin
+				//	LFMC returns DY to DY0 after the last row, like LFMM.
+				ff_dy <= ff_sy2[18:8];
 			end
 			else begin
 				if( w_nx_end || w_sx_overflow || w_dx_overflow ) begin
@@ -990,13 +1002,18 @@ module vdp_command (
 			if( ff_command == c_lfmm ) begin
 				// The screen edge ends the character row as well as its eighth bit.
 				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
-					if( w_lfmm_y_end && !w_lfmm_finish ) begin
+					//	Every character, the last one included, reloads NY0, so LFMM leaves NY as it was set.
+					if( w_lfmm_y_end ) begin
 						ff_ny <= w_ny_mask & reg_ny;
 					end
 					else begin
 						ff_ny <= w_ny_dec;
 					end
 				end
+			end
+			else if( ff_command == c_lfmc && (w_nx_end || w_dx_overflow) && w_lfmm_y_end ) begin
+				//	LFMC reloads NY0 after the last row, so it leaves NY as it was set, like LFMM.
+				ff_ny <= w_ny_mask & reg_ny;
 			end
 			else if( w_nx_end || w_sx_overflow || w_dx_overflow ) begin
 				ff_ny <= w_ny_dec;
