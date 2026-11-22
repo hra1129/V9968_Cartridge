@@ -353,7 +353,7 @@ module tb_geo3d_hmmv;
             write_reg(6'd46, 8'hc0, span);
             if (u_command.ff_geo_hmmv !== 1'b0) $fatal(1, "Native HMMV was tagged as Geo3D");
             wait_command_end();
-            if (u_command.reg_nx !== 11'd10 || u_command.reg_ny !== 11'd1 ||
+            if (u_command.reg_nx !== 11'd10 || u_command.reg_ny !== 11'd0 ||
                 u_command.ff_dy !== 11'd18 || u_command.ff_command !== 4'hc)
                 $fatal(1, "Native HMMV parameters changed");
         end

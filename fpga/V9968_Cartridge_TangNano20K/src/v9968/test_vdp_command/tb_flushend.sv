@@ -242,7 +242,7 @@ module tb_flushend;
 			check_rectangle(0, 2, 61, 1, 8'h35);
 			check_rectangle(16, 8, 5, kind < 2 ? 1 : 4, 8'hC7);
 			if (u_command.reg_nx !== (kind < 2 ? 11'd4 : 11'd5) ||
-				u_command.reg_ny !== (kind < 2 ? 11'd0 : 11'd4) || u_command.ff_geo_hmmv)
+				u_command.reg_ny !== 11'd0 || u_command.ff_geo_hmmv)
 				$fatal(1, "Wrong final NX/NY/Geo3D state");
 			if (kind == 1 && u_command.ff_command !== u_command.c_line)
 				$fatal(1, "Geo3D command did not restore LINE at its own completion");
@@ -303,8 +303,7 @@ module tb_flushend;
 				while (command_execute) @(negedge clk);
 			end
 			check_rectangle(0, 2, 61, 1, 8'h35);
-			// STOP itself writes NY back at its end, so only the LINE NX is checked for it.
-			if (u_command.reg_nx !== 11'd60 || (reissue && u_command.reg_ny !== 11'd0) || u_command.ff_geo_hmmv)
+			if (u_command.reg_nx !== 11'd60 || u_command.reg_ny !== 11'd0 || u_command.ff_geo_hmmv)
 				$fatal(1, "Interrupted Geo3D HMMV did not restore LINE NX/NY");
 			$display("Geo3D interrupt reissue=%b passed", reissue);
 		end

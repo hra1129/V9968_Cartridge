@@ -189,7 +189,8 @@ module vdp_command (
 	reg			[8:0]	reg_wex;
 	reg			[10:0]	reg_wey;
 	wire		[10:0]	w_nx;
-	wire		[11:0]	w_ny;
+	wire		[10:0]	w_ny_mask;
+	wire		[10:0]	w_ny_dec;
 	wire				w_nx_end;
 	wire				w_ny_end;
 	reg			[11:0]	ff_nyb;
@@ -241,9 +242,11 @@ module vdp_command (
 	wire		[21:0]	w_address_d;
 	wire		[7:0]	w_color_mask;
 	wire		[21:0]	w_font_address;
-	wire		[10:0]	w_lfmm_font_advance_wrap;
 	wire		[11:0]	w_lfmm_font_advance;
 	wire				w_lfmm_y_end;
+	wire				w_lfmm_finish;
+	reg			[8:0]	ff_lfmm_dx;
+	reg			[12:0]	reg_sy0;
 	wire		[12:0]	w_next_nyb;
 	wire		[11:0]	w_nyb_shift;
 	wire		[11:0]	w_nyb_mask;
@@ -385,10 +388,12 @@ module vdp_command (
 	//	The font address is a CPU-view address, so it is interleaved in the same way as the CPU access
 	assign w_font_address		= { reg_command_src_bank, vram_interleave ? { ff_font_address[17], ff_font_address[0], ff_font_address[16:1] }: ff_font_address };
 	assign w_lfmm_y_end			= w_ny_end || w_dy_overflow;
-	assign w_lfmm_font_advance_wrap = reg_ny - ff_ny + 11'd1;
+	//	The last row of the last character (or the right edge on the last row) ends LFMM.
+	assign w_lfmm_finish		= ((w_nx_end && ff_bit_count == 3'd0) || w_dx_overflow) && w_lfmm_y_end;
+	//	ff_ny holds the rows left in the character, including the current one (0 = 1024/2048 rows).
 	assign w_lfmm_font_advance	= reg_vram256k_mode ?
-								  (w_lfmm_font_advance_wrap == 11'd0 ? 12'd2048 : {1'b0, w_lfmm_font_advance_wrap}) :
-								  (w_lfmm_font_advance_wrap[9:0] == 10'd0 ? 12'd1024 : {2'b0, w_lfmm_font_advance_wrap[9:0]});
+								  (ff_ny == 11'd0 ? 12'd2048 : {1'b0, ff_ny}) :
+								  (ff_ny[9:0] == 10'd0 ? 12'd1024 : {2'b0, ff_ny[9:0]});
 
 	// --------------------------------------------------------------------
 	//	Command complete interrupt
@@ -448,7 +453,7 @@ module vdp_command (
 		else if( ff_cache_vram_valid ) begin
 			//	hold
 		end
-		else if( ff_count_valid && (ff_bit_count == 3'd0 || (ff_command == c_lfmm && w_dx_overflow)) ) begin
+		else if( ff_count_valid && ff_command == c_lfmm && (ff_bit_count == 3'd0 || w_dx_overflow) ) begin
 			// Skip the invisible font rows when an LFMM character reaches Y=0.
 			if( ff_command == c_lfmm && w_dy_overflow && !w_ny_end ) begin
 				ff_font_address <= ff_font_address + { 6'd0, w_lfmm_font_advance };
@@ -518,6 +523,10 @@ module vdp_command (
 		else if( register_write && register_num == 6'd35 ) begin
 			ff_sy[20:16]	<= register_data[4:0];
 		end
+		else if( w_command_flush_end && ff_command == c_lrmm ) begin
+			//	LRMM leaves SY as it was set, like SX.
+			ff_sy	<= { reg_sy0, 8'd0 };
+		end
 		else if( ff_start ) begin
 			if( ff_command == c_lrmm ) begin
 				if( ff_xhr ) begin
@@ -562,6 +571,22 @@ module vdp_command (
 					ff_sy <= { 1'b0, w_next_sy[9:0], 8'd0 };
 				end
 			end
+		end
+	end
+
+	//	SY at the start of LRMM; bytes the CPU writes during the command are taken as the new SY.
+	always @( posedge clk ) begin
+		if( !reset_n ) begin
+			reg_sy0	<= 13'd0;
+		end
+		else if( register_write && register_num == 6'd34 ) begin
+			reg_sy0[7:0]	<= register_data;
+		end
+		else if( register_write && register_num == 6'd35 ) begin
+			reg_sy0[12:8]	<= register_data[4:0];
+		end
+		else if( ff_start ) begin
+			reg_sy0	<= ff_sy[20:8];
 		end
 	end
 
@@ -619,13 +644,19 @@ module vdp_command (
 		else if( register_write && register_num == 6'd37 ) begin
 			reg_dx[8]	<= register_data[0];
 		end
-		else if( ff_command == c_lfmm ) begin
-			if( ff_count_valid && ff_bit_count == 3'd0 && w_lfmm_y_end ) begin
-				reg_dx	<= w_next_dx[8:0];
-			end
-			else begin
-				//	hold
-			end
+	end
+
+	//	X of the character LFMM is drawing; DX itself is left as it was set.
+	always @( posedge clk ) begin
+		if( !reset_n ) begin
+			ff_lfmm_dx	<= 9'd0;
+		end
+		else if( ff_start ) begin
+			ff_lfmm_dx	<= reg_dx;
+		end
+		else if( ff_command == c_lfmm && ff_command_execute && !ff_cache_vram_valid &&
+				 ff_count_valid && ff_bit_count == 3'd0 && w_lfmm_y_end ) begin
+			ff_lfmm_dx	<= w_next_dx[8:0];
 		end
 	end
 
@@ -656,7 +687,7 @@ module vdp_command (
 			end
 			else if( ff_command == c_lfmm ) begin
 				if( (ff_bit_count == 3'd0 && !w_lfmm_y_end) || w_dx_overflow ) begin
-					ff_dx <= reg_dx;
+					ff_dx <= ff_lfmm_dx;
 					ff_bit_count <= 3'd7;
 				end
 				else begin
@@ -728,10 +759,11 @@ module vdp_command (
 			end
 			else if( ff_command == c_lfmm ) begin
 				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
-					if( w_lfmm_y_end ) begin
+					if( w_lfmm_y_end && !w_lfmm_finish ) begin
 						ff_dy <= ff_sy2[18:8];
 					end
 					else begin
+						//	The last row steps DY like LMMC (DY0 +/- NY at the end).
 						ff_dy <= w_next_dy[10:0];
 					end
 				end
@@ -927,16 +959,22 @@ module vdp_command (
 		end
 	end
 
+	//	ff_ny counts down the rows left, as the V9958 NY does, and is written back to NY at the end:
+	//	0 after all rows, NY - N when an edge ends the command after N rows.
 	always @( posedge clk ) begin
 		if( !reset_n ) begin
-			ff_ny	<= 11'd1;
+			ff_ny	<= 11'd0;
+		end
+		else if( w_geo_r46_write && !w_geo_hmmv_start ) begin
+			//	A STOP that interrupts a Geo3D HMMV must leave NY of the original LINE.
+			ff_ny <= w_ny_line;
 		end
 		else if( ff_start ) begin
-			if( ff_command[3:2] == 2'b01  ) begin
-				ff_ny <= reg_ny;
+			if( ff_command == c_stop && ff_command_execute ) begin
+				//	STOP leaves the count of the interrupted command.
 			end
 			else begin
-				ff_ny <= 11'd1;
+				ff_ny <= w_ny_mask & reg_ny;
 			end
 		end
 		else if( w_geo_hmmv_fallback ) begin
@@ -952,26 +990,27 @@ module vdp_command (
 			if( ff_command == c_lfmm ) begin
 				// The screen edge ends the character row as well as its eighth bit.
 				if( ff_bit_count == 3'd0 || w_dx_overflow ) begin
-					if( w_lfmm_y_end ) begin
-						ff_ny <= 11'd1;
+					if( w_lfmm_y_end && !w_lfmm_finish ) begin
+						ff_ny <= w_ny_mask & reg_ny;
 					end
 					else begin
-						ff_ny <= w_ny[10:0];
+						ff_ny <= w_ny_dec;
 					end
 				end
 			end
-			else if( (w_nx_end || w_sx_overflow || w_dx_overflow) && !w_ny_end ) begin
-				ff_ny <= w_ny[10:0];
+			else if( w_nx_end || w_sx_overflow || w_dx_overflow ) begin
+				ff_ny <= w_ny_dec;
 			end
 		end
 	end
 
-	assign w_ny			= { 1'b0, ff_ny } + 12'd1;
+	assign w_ny_mask	= reg_vram256k_mode ? 11'h7FF : 11'h3FF;
+	assign w_ny_dec		= w_ny_mask & (ff_ny - 11'd1);
 	assign w_nx_max		= ff_pixel_step[2] ? { reg_nx[10:2], 2'd0 }:
 	            		  ff_pixel_step[1] ? { reg_nx[10:1], 1'd0 }: reg_nx;
 	assign w_nx_end		= (ff_nx == w_nx_max && ff_command != c_ymmm);
-	//	NY=0 means 1024 lines (2048 in the 256KB mode).
-	assign w_ny_end		= reg_vram256k_mode ? (ff_ny == reg_ny) : (ff_ny[9:0] == reg_ny[9:0]);
+	//	The last row is the one with a count of 1; NY=0 means 1024 lines (2048 in the 256KB mode).
+	assign w_ny_end		= reg_vram256k_mode ? (ff_ny == 11'd1) : (ff_ny[9:0] == 10'd1);
 
 	//	LINEコマンドの分子を示すカウンタ
 	assign w_reg_nx		= reg_nx - 11'd1;
@@ -1016,6 +1055,10 @@ module vdp_command (
 			ff_color	<= register_data;
 		end
 		else if( ff_state == c_state_lmcm_make ) begin
+			ff_color	<= ff_read_pixel;
+		end
+		else if( ff_state == c_state_pre_finish && ff_command == c_point ) begin
+			//	On the V9958 S#7 and R#44 are the same color register.
 			ff_color	<= ff_read_pixel;
 		end
 	end
@@ -1603,6 +1646,8 @@ module vdp_command (
 			c_state_lmcm_next: begin
 				if( ff_read_color ) begin
 					if( (w_nx_end || w_sx_overflow || w_dx_overflow) && (w_ny_end || w_sy_overflow) ) begin
+						//	The last transfer also steps SY and NY.
+						ff_count_valid			<= 1'b1;
 						ff_state				<= c_state_pre_finish;
 					end
 					else if( reg_command_high_speed_mode ) begin

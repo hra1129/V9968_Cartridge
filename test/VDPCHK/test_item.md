@@ -2,12 +2,14 @@
 
 このファイルは `gen_vdpchk.py` が生成します。直接編集しないでください。
 
-- 全 874 項目。VDPCHK.COM は失敗した項目の番号を最後に表示します。
+- 全 1480 項目。VDPCHK.COM が 1～874、VDPREG.COM が 875～1480 を実行し、失敗した項目の番号を最後に表示します。
 - 期待値は openMSX の VDPCmdEngine (実機で確認された動作) とデータブックに準拠した参照モデルで生成しています。
 - 各項目は試験範囲を既知のパターンで埋めてから実行し、CPU で VRAM を読み戻して CRC で比較します。範囲はコマンドが触れるライン全体と、その上下 1 ラインです。
 - 「V9968 のみ」の節は V9968 を検出できない場合 (V9958 実機など) はスキップし、全数に含めません。
 - VRAM バンクの節は全バンクにバンクごとに異なるパターンを書き、対象バンクとバンク番号が 1 ビット違うバンク(ガード) も読み戻して、別バンクの同じアドレスが壊れていないことを確認します。R#29 (スプライト) は 1 フレーム表示させて S#0 の衝突フラグで確認します。LFMM はフォントを SRC バンク、描画先を DST バンクに置き、ガードバンクの同じアドレスには別のフォントを置いて確認します。BG バンク (表示のみ)、コマンド実行中の R#30 変更は自動確認の対象外です。
 - 番号の後ろの `T` はタイムアウト (CE または TR が落ちなかった) を表します。
+
+# VDPCHK.COM
 
 ## CPU による VRAM 読み書き
 
@@ -1326,3 +1328,793 @@
 | 872 | SCREEN8 | SCREEN8 SRC=14 DST=1 フォント 3FFF9h (折り返し) |
 | 873 | SCREEN7 | SCREEN7 SRC=4 DST=11 フォント 20001h |
 | 874 | SCREEN6 | SCREEN6 SRC=12 DST=3 |
+
+# VDPREG.COM (コマンド終了時のレジスタ)
+
+- V9958 の表 4.7 (コマンド終了時のレジスタの状態) を確認します。コマンド R#32～R#46 は読み出せないため、最初のコマンドの後に一部のレジスタ (内容欄の括弧内) と R#46 だけを書いて次のコマンドを実行し、その描画結果、S#7、S#8/S#9 から、保持された値と更新された値 (DY/SY = 終了座標、NY = 残り行数、CLR = 読み出した色) を確認します。
+- NY=0 の確認は、DIY=1 で小さい DY から実行し、上端で打ち切られる行数で確認します (NY=0 は 1024 行、256KB モードでは 2048 行)。
+- LMMC/HMMC の CLR (最後に CPU が書いた値) と、実行中の STOP は対象外です。
+
+## SCREEN5 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 875 | SCREEN5 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 876 | SCREEN5 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 877 | SCREEN5 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 878 | SCREEN5 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 879 | SCREEN5 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 880 | SCREEN5 | LMMV DIY=1 → LMMV OR (DY/CLR): NY=0 |
+| 881 | SCREEN5 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 882 | SCREEN5 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 883 | SCREEN5 | LMMM DIX=1 DIY=1 → LMMM (DY): NY=0, SY=SY0-N |
+| 884 | SCREEN5 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 885 | SCREEN5 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 886 | SCREEN5 | HMMM DIY=1 → HMMM (DY): NY=0, SY=SY0-N |
+| 887 | SCREEN5 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 888 | SCREEN5 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 889 | SCREEN5 | YMMM 上端で打ち切り → YMMM (DY): SY/NY |
+| 890 | SCREEN5 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 891 | SCREEN5 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 892 | SCREEN5 | LMCM 上端で打ち切り → LMCM (SY): NY=NY0-N |
+| 893 | SCREEN5 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 894 | SCREEN5 | LMMC 上端で打ち切り → LMMC (DY/CLR): NY=NY0-N |
+| 895 | SCREEN5 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 896 | SCREEN5 | HMMC DIX=1 DIY=1 → HMMC (DY/CLR): NY=0 |
+| 897 | SCREEN5 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 898 | SCREEN5 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 899 | SCREEN5 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 900 | SCREEN5 | LINE Y 主軸 DIY=1 → LINE (CLR): DY 進む |
+| 901 | SCREEN5 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## SCREEN8 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 902 | SCREEN8 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 903 | SCREEN8 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 904 | SCREEN8 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 905 | SCREEN8 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 906 | SCREEN8 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 907 | SCREEN8 | LMMV DIY=1 → LMMV OR (DY/CLR): NY=0 |
+| 908 | SCREEN8 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 909 | SCREEN8 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 910 | SCREEN8 | LMMM DIX=1 DIY=1 → LMMM (DY): NY=0, SY=SY0-N |
+| 911 | SCREEN8 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 912 | SCREEN8 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 913 | SCREEN8 | HMMM DIY=1 → HMMM (DY): NY=0, SY=SY0-N |
+| 914 | SCREEN8 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 915 | SCREEN8 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 916 | SCREEN8 | YMMM 上端で打ち切り → YMMM (DY): SY/NY |
+| 917 | SCREEN8 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 918 | SCREEN8 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 919 | SCREEN8 | LMCM 上端で打ち切り → LMCM (SY): NY=NY0-N |
+| 920 | SCREEN8 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 921 | SCREEN8 | LMMC 上端で打ち切り → LMMC (DY/CLR): NY=NY0-N |
+| 922 | SCREEN8 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 923 | SCREEN8 | HMMC DIX=1 DIY=1 → HMMC (DY/CLR): NY=0 |
+| 924 | SCREEN8 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 925 | SCREEN8 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 926 | SCREEN8 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 927 | SCREEN8 | LINE Y 主軸 DIY=1 → LINE (CLR): DY 進む |
+| 928 | SCREEN8 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## SCREEN6 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 929 | SCREEN6 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 930 | SCREEN6 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 931 | SCREEN6 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 932 | SCREEN6 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 933 | SCREEN6 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 934 | SCREEN6 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 935 | SCREEN6 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 936 | SCREEN6 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 937 | SCREEN6 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 938 | SCREEN6 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 939 | SCREEN6 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 940 | SCREEN6 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 941 | SCREEN6 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 942 | SCREEN6 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 943 | SCREEN6 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 944 | SCREEN6 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 945 | SCREEN6 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 946 | SCREEN6 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 947 | SCREEN6 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## SCREEN7 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 948 | SCREEN7 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 949 | SCREEN7 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 950 | SCREEN7 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 951 | SCREEN7 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 952 | SCREEN7 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 953 | SCREEN7 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 954 | SCREEN7 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 955 | SCREEN7 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 956 | SCREEN7 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 957 | SCREEN7 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 958 | SCREEN7 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 959 | SCREEN7 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 960 | SCREEN7 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 961 | SCREEN7 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 962 | SCREEN7 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 963 | SCREEN7 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 964 | SCREEN7 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 965 | SCREEN7 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 966 | SCREEN7 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## SCREEN10 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 967 | SCREEN10 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 968 | SCREEN10 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 969 | SCREEN10 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 970 | SCREEN10 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 971 | SCREEN10 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 972 | SCREEN10 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 973 | SCREEN10 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 974 | SCREEN10 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 975 | SCREEN10 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 976 | SCREEN10 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 977 | SCREEN10 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 978 | SCREEN10 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 979 | SCREEN10 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 980 | SCREEN10 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 981 | SCREEN10 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 982 | SCREEN10 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 983 | SCREEN10 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 984 | SCREEN10 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 985 | SCREEN10 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## SCREEN12 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 986 | SCREEN12 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 987 | SCREEN12 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 988 | SCREEN12 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 989 | SCREEN12 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 990 | SCREEN12 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 991 | SCREEN12 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 992 | SCREEN12 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 993 | SCREEN12 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 994 | SCREEN12 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 995 | SCREEN12 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 996 | SCREEN12 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 997 | SCREEN12 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 998 | SCREEN12 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 999 | SCREEN12 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1000 | SCREEN12 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1001 | SCREEN12 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1002 | SCREEN12 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1003 | SCREEN12 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1004 | SCREEN12 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## SCREEN0-4 で R#25 CMD=1 のコマンド終了時のレジスタ
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1005 | SCREEN0(W40) CMD=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1006 | SCREEN0(W40) CMD=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1007 | SCREEN0(W40) CMD=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1008 | SCREEN0(W40) CMD=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1009 | SCREEN0(W40) CMD=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1010 | SCREEN0(W40) CMD=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1011 | SCREEN0(W40) CMD=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1012 | SCREEN0(W40) CMD=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1013 | SCREEN0(W40) CMD=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1014 | SCREEN0(W40) CMD=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1015 | SCREEN0(W40) CMD=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1016 | SCREEN0(W40) CMD=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1017 | SCREEN0(W40) CMD=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1018 | SCREEN0(W40) CMD=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1019 | SCREEN0(W40) CMD=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1020 | SCREEN0(W40) CMD=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1021 | SCREEN0(W40) CMD=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1022 | SCREEN0(W40) CMD=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1023 | SCREEN0(W40) CMD=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1024 | SCREEN0(W80) CMD=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1025 | SCREEN0(W80) CMD=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1026 | SCREEN0(W80) CMD=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1027 | SCREEN0(W80) CMD=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1028 | SCREEN0(W80) CMD=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1029 | SCREEN0(W80) CMD=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1030 | SCREEN0(W80) CMD=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1031 | SCREEN0(W80) CMD=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1032 | SCREEN0(W80) CMD=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1033 | SCREEN0(W80) CMD=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1034 | SCREEN0(W80) CMD=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1035 | SCREEN0(W80) CMD=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1036 | SCREEN0(W80) CMD=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1037 | SCREEN0(W80) CMD=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1038 | SCREEN0(W80) CMD=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1039 | SCREEN0(W80) CMD=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1040 | SCREEN0(W80) CMD=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1041 | SCREEN0(W80) CMD=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1042 | SCREEN0(W80) CMD=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1043 | SCREEN1 CMD=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1044 | SCREEN1 CMD=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1045 | SCREEN1 CMD=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1046 | SCREEN1 CMD=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1047 | SCREEN1 CMD=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1048 | SCREEN1 CMD=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1049 | SCREEN1 CMD=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1050 | SCREEN1 CMD=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1051 | SCREEN1 CMD=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1052 | SCREEN1 CMD=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1053 | SCREEN1 CMD=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1054 | SCREEN1 CMD=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1055 | SCREEN1 CMD=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1056 | SCREEN1 CMD=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1057 | SCREEN1 CMD=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1058 | SCREEN1 CMD=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1059 | SCREEN1 CMD=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1060 | SCREEN1 CMD=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1061 | SCREEN1 CMD=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1062 | SCREEN2 CMD=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1063 | SCREEN2 CMD=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1064 | SCREEN2 CMD=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1065 | SCREEN2 CMD=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1066 | SCREEN2 CMD=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1067 | SCREEN2 CMD=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1068 | SCREEN2 CMD=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1069 | SCREEN2 CMD=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1070 | SCREEN2 CMD=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1071 | SCREEN2 CMD=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1072 | SCREEN2 CMD=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1073 | SCREEN2 CMD=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1074 | SCREEN2 CMD=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1075 | SCREEN2 CMD=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1076 | SCREEN2 CMD=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1077 | SCREEN2 CMD=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1078 | SCREEN2 CMD=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1079 | SCREEN2 CMD=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1080 | SCREEN2 CMD=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1081 | SCREEN3 CMD=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1082 | SCREEN3 CMD=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1083 | SCREEN3 CMD=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1084 | SCREEN3 CMD=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1085 | SCREEN3 CMD=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1086 | SCREEN3 CMD=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1087 | SCREEN3 CMD=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1088 | SCREEN3 CMD=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1089 | SCREEN3 CMD=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1090 | SCREEN3 CMD=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1091 | SCREEN3 CMD=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1092 | SCREEN3 CMD=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1093 | SCREEN3 CMD=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1094 | SCREEN3 CMD=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1095 | SCREEN3 CMD=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1096 | SCREEN3 CMD=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1097 | SCREEN3 CMD=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1098 | SCREEN3 CMD=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1099 | SCREEN3 CMD=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1100 | SCREEN4 CMD=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1101 | SCREEN4 CMD=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1102 | SCREEN4 CMD=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1103 | SCREEN4 CMD=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1104 | SCREEN4 CMD=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1105 | SCREEN4 CMD=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1106 | SCREEN4 CMD=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1107 | SCREEN4 CMD=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1108 | SCREEN4 CMD=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1109 | SCREEN4 CMD=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1110 | SCREEN4 CMD=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1111 | SCREEN4 CMD=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1112 | SCREEN4 CMD=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1113 | SCREEN4 CMD=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1114 | SCREEN4 CMD=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1115 | SCREEN4 CMD=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1116 | SCREEN4 CMD=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1117 | SCREEN4 CMD=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1118 | SCREEN4 CMD=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## FG4=1 のコマンド終了時のレジスタ (V9968 のみ)
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1119 | SCREEN0(W40) CMD=1 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1120 | SCREEN0(W40) CMD=1 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1121 | SCREEN0(W40) CMD=1 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1122 | SCREEN0(W40) CMD=1 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1123 | SCREEN0(W40) CMD=1 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1124 | SCREEN0(W40) CMD=1 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1125 | SCREEN0(W40) CMD=1 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1126 | SCREEN0(W40) CMD=1 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1127 | SCREEN0(W40) CMD=1 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1128 | SCREEN0(W40) CMD=1 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1129 | SCREEN0(W40) CMD=1 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1130 | SCREEN0(W40) CMD=1 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1131 | SCREEN0(W40) CMD=1 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1132 | SCREEN0(W40) CMD=1 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1133 | SCREEN0(W40) CMD=1 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1134 | SCREEN0(W40) CMD=1 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1135 | SCREEN0(W40) CMD=1 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1136 | SCREEN0(W40) CMD=1 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1137 | SCREEN0(W40) CMD=1 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1138 | SCREEN0(W80) CMD=1 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1139 | SCREEN0(W80) CMD=1 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1140 | SCREEN0(W80) CMD=1 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1141 | SCREEN0(W80) CMD=1 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1142 | SCREEN0(W80) CMD=1 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1143 | SCREEN0(W80) CMD=1 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1144 | SCREEN0(W80) CMD=1 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1145 | SCREEN0(W80) CMD=1 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1146 | SCREEN0(W80) CMD=1 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1147 | SCREEN0(W80) CMD=1 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1148 | SCREEN0(W80) CMD=1 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1149 | SCREEN0(W80) CMD=1 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1150 | SCREEN0(W80) CMD=1 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1151 | SCREEN0(W80) CMD=1 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1152 | SCREEN0(W80) CMD=1 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1153 | SCREEN0(W80) CMD=1 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1154 | SCREEN0(W80) CMD=1 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1155 | SCREEN0(W80) CMD=1 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1156 | SCREEN0(W80) CMD=1 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1157 | SCREEN1 CMD=1 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1158 | SCREEN1 CMD=1 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1159 | SCREEN1 CMD=1 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1160 | SCREEN1 CMD=1 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1161 | SCREEN1 CMD=1 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1162 | SCREEN1 CMD=1 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1163 | SCREEN1 CMD=1 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1164 | SCREEN1 CMD=1 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1165 | SCREEN1 CMD=1 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1166 | SCREEN1 CMD=1 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1167 | SCREEN1 CMD=1 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1168 | SCREEN1 CMD=1 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1169 | SCREEN1 CMD=1 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1170 | SCREEN1 CMD=1 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1171 | SCREEN1 CMD=1 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1172 | SCREEN1 CMD=1 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1173 | SCREEN1 CMD=1 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1174 | SCREEN1 CMD=1 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1175 | SCREEN1 CMD=1 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1176 | SCREEN2 CMD=1 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1177 | SCREEN2 CMD=1 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1178 | SCREEN2 CMD=1 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1179 | SCREEN2 CMD=1 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1180 | SCREEN2 CMD=1 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1181 | SCREEN2 CMD=1 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1182 | SCREEN2 CMD=1 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1183 | SCREEN2 CMD=1 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1184 | SCREEN2 CMD=1 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1185 | SCREEN2 CMD=1 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1186 | SCREEN2 CMD=1 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1187 | SCREEN2 CMD=1 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1188 | SCREEN2 CMD=1 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1189 | SCREEN2 CMD=1 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1190 | SCREEN2 CMD=1 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1191 | SCREEN2 CMD=1 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1192 | SCREEN2 CMD=1 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1193 | SCREEN2 CMD=1 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1194 | SCREEN2 CMD=1 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1195 | SCREEN3 CMD=1 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1196 | SCREEN3 CMD=1 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1197 | SCREEN3 CMD=1 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1198 | SCREEN3 CMD=1 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1199 | SCREEN3 CMD=1 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1200 | SCREEN3 CMD=1 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1201 | SCREEN3 CMD=1 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1202 | SCREEN3 CMD=1 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1203 | SCREEN3 CMD=1 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1204 | SCREEN3 CMD=1 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1205 | SCREEN3 CMD=1 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1206 | SCREEN3 CMD=1 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1207 | SCREEN3 CMD=1 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1208 | SCREEN3 CMD=1 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1209 | SCREEN3 CMD=1 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1210 | SCREEN3 CMD=1 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1211 | SCREEN3 CMD=1 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1212 | SCREEN3 CMD=1 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1213 | SCREEN3 CMD=1 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1214 | SCREEN4 CMD=1 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1215 | SCREEN4 CMD=1 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1216 | SCREEN4 CMD=1 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1217 | SCREEN4 CMD=1 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1218 | SCREEN4 CMD=1 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1219 | SCREEN4 CMD=1 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1220 | SCREEN4 CMD=1 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1221 | SCREEN4 CMD=1 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1222 | SCREEN4 CMD=1 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1223 | SCREEN4 CMD=1 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1224 | SCREEN4 CMD=1 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1225 | SCREEN4 CMD=1 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1226 | SCREEN4 CMD=1 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1227 | SCREEN4 CMD=1 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1228 | SCREEN4 CMD=1 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1229 | SCREEN4 CMD=1 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1230 | SCREEN4 CMD=1 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1231 | SCREEN4 CMD=1 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1232 | SCREEN4 CMD=1 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1233 | SCREEN5 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1234 | SCREEN5 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1235 | SCREEN5 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1236 | SCREEN5 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1237 | SCREEN5 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1238 | SCREEN5 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1239 | SCREEN5 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1240 | SCREEN5 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1241 | SCREEN5 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1242 | SCREEN5 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1243 | SCREEN5 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1244 | SCREEN5 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1245 | SCREEN5 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1246 | SCREEN5 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1247 | SCREEN5 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1248 | SCREEN5 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1249 | SCREEN5 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1250 | SCREEN5 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1251 | SCREEN5 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1252 | SCREEN6 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1253 | SCREEN6 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1254 | SCREEN6 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1255 | SCREEN6 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1256 | SCREEN6 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1257 | SCREEN6 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1258 | SCREEN6 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1259 | SCREEN6 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1260 | SCREEN6 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1261 | SCREEN6 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1262 | SCREEN6 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1263 | SCREEN6 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1264 | SCREEN6 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1265 | SCREEN6 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1266 | SCREEN6 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1267 | SCREEN6 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1268 | SCREEN6 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1269 | SCREEN6 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1270 | SCREEN6 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1271 | SCREEN7 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1272 | SCREEN7 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1273 | SCREEN7 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1274 | SCREEN7 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1275 | SCREEN7 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1276 | SCREEN7 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1277 | SCREEN7 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1278 | SCREEN7 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1279 | SCREEN7 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1280 | SCREEN7 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1281 | SCREEN7 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1282 | SCREEN7 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1283 | SCREEN7 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1284 | SCREEN7 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1285 | SCREEN7 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1286 | SCREEN7 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1287 | SCREEN7 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1288 | SCREEN7 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1289 | SCREEN7 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1290 | SCREEN8 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1291 | SCREEN8 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1292 | SCREEN8 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1293 | SCREEN8 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1294 | SCREEN8 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1295 | SCREEN8 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1296 | SCREEN8 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1297 | SCREEN8 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1298 | SCREEN8 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1299 | SCREEN8 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1300 | SCREEN8 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1301 | SCREEN8 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1302 | SCREEN8 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1303 | SCREEN8 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1304 | SCREEN8 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1305 | SCREEN8 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1306 | SCREEN8 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1307 | SCREEN8 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1308 | SCREEN8 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1309 | SCREEN10 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1310 | SCREEN10 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1311 | SCREEN10 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1312 | SCREEN10 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1313 | SCREEN10 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1314 | SCREEN10 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1315 | SCREEN10 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1316 | SCREEN10 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1317 | SCREEN10 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1318 | SCREEN10 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1319 | SCREEN10 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1320 | SCREEN10 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1321 | SCREEN10 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1322 | SCREEN10 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1323 | SCREEN10 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1324 | SCREEN10 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1325 | SCREEN10 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1326 | SCREEN10 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1327 | SCREEN10 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1328 | SCREEN11 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1329 | SCREEN11 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1330 | SCREEN11 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1331 | SCREEN11 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1332 | SCREEN11 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1333 | SCREEN11 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1334 | SCREEN11 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1335 | SCREEN11 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1336 | SCREEN11 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1337 | SCREEN11 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1338 | SCREEN11 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1339 | SCREEN11 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1340 | SCREEN11 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1341 | SCREEN11 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1342 | SCREEN11 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1343 | SCREEN11 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1344 | SCREEN11 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1345 | SCREEN11 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1346 | SCREEN11 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1347 | SCREEN12 FG4=1 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1348 | SCREEN12 FG4=1 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1349 | SCREEN12 FG4=1 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1350 | SCREEN12 FG4=1 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1351 | SCREEN12 FG4=1 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1352 | SCREEN12 FG4=1 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1353 | SCREEN12 FG4=1 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1354 | SCREEN12 FG4=1 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1355 | SCREEN12 FG4=1 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1356 | SCREEN12 FG4=1 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1357 | SCREEN12 FG4=1 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1358 | SCREEN12 FG4=1 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1359 | SCREEN12 FG4=1 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1360 | SCREEN12 FG4=1 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1361 | SCREEN12 FG4=1 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1362 | SCREEN12 FG4=1 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1363 | SCREEN12 FG4=1 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1364 | SCREEN12 FG4=1 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1365 | SCREEN12 FG4=1 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+## 256KB モード (V58=0) のコマンド終了時のレジスタ (V9968 のみ)
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1366 | SCREEN5 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1367 | SCREEN5 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1368 | SCREEN5 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1369 | SCREEN5 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1370 | SCREEN5 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1371 | SCREEN5 | LMMV DIY=1 → LMMV OR (DY/CLR): NY=0 |
+| 1372 | SCREEN5 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1373 | SCREEN5 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1374 | SCREEN5 | LMMM DIX=1 DIY=1 → LMMM (DY): NY=0, SY=SY0-N |
+| 1375 | SCREEN5 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1376 | SCREEN5 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1377 | SCREEN5 | HMMM DIY=1 → HMMM (DY): NY=0, SY=SY0-N |
+| 1378 | SCREEN5 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1379 | SCREEN5 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1380 | SCREEN5 | YMMM 上端で打ち切り → YMMM (DY): SY/NY |
+| 1381 | SCREEN5 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1382 | SCREEN5 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1383 | SCREEN5 | LMCM 上端で打ち切り → LMCM (SY): NY=NY0-N |
+| 1384 | SCREEN5 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1385 | SCREEN5 | LMMC 上端で打ち切り → LMMC (DY/CLR): NY=NY0-N |
+| 1386 | SCREEN5 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1387 | SCREEN5 | HMMC DIX=1 DIY=1 → HMMC (DY/CLR): NY=0 |
+| 1388 | SCREEN5 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1389 | SCREEN5 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1390 | SCREEN5 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1391 | SCREEN5 | LINE Y 主軸 DIY=1 → LINE (CLR): DY 進む |
+| 1392 | SCREEN5 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1393 | SCREEN6 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1394 | SCREEN6 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1395 | SCREEN6 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1396 | SCREEN6 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1397 | SCREEN6 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1398 | SCREEN6 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1399 | SCREEN6 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1400 | SCREEN6 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1401 | SCREEN6 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1402 | SCREEN6 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1403 | SCREEN6 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1404 | SCREEN6 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1405 | SCREEN6 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1406 | SCREEN6 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1407 | SCREEN6 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1408 | SCREEN6 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1409 | SCREEN6 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1410 | SCREEN6 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1411 | SCREEN6 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1412 | SCREEN7 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1413 | SCREEN7 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1414 | SCREEN7 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1415 | SCREEN7 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1416 | SCREEN7 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1417 | SCREEN7 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1418 | SCREEN7 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1419 | SCREEN7 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1420 | SCREEN7 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1421 | SCREEN7 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1422 | SCREEN7 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1423 | SCREEN7 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1424 | SCREEN7 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1425 | SCREEN7 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1426 | SCREEN7 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1427 | SCREEN7 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1428 | SCREEN7 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1429 | SCREEN7 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1430 | SCREEN7 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1431 | SCREEN8 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1432 | SCREEN8 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1433 | SCREEN8 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1434 | SCREEN8 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1435 | SCREEN8 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1436 | SCREEN8 | LMMV DIY=1 → LMMV OR (DY/CLR): NY=0 |
+| 1437 | SCREEN8 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1438 | SCREEN8 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1439 | SCREEN8 | LMMM DIX=1 DIY=1 → LMMM (DY): NY=0, SY=SY0-N |
+| 1440 | SCREEN8 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1441 | SCREEN8 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1442 | SCREEN8 | HMMM DIY=1 → HMMM (DY): NY=0, SY=SY0-N |
+| 1443 | SCREEN8 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1444 | SCREEN8 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1445 | SCREEN8 | YMMM 上端で打ち切り → YMMM (DY): SY/NY |
+| 1446 | SCREEN8 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1447 | SCREEN8 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1448 | SCREEN8 | LMCM 上端で打ち切り → LMCM (SY): NY=NY0-N |
+| 1449 | SCREEN8 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1450 | SCREEN8 | LMMC 上端で打ち切り → LMMC (DY/CLR): NY=NY0-N |
+| 1451 | SCREEN8 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1452 | SCREEN8 | HMMC DIX=1 DIY=1 → HMMC (DY/CLR): NY=0 |
+| 1453 | SCREEN8 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1454 | SCREEN8 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1455 | SCREEN8 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1456 | SCREEN8 | LINE Y 主軸 DIY=1 → LINE (CLR): DY 進む |
+| 1457 | SCREEN8 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1458 | SCREEN11 | HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1459 | SCREEN11 | HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持 |
+| 1460 | SCREEN11 | HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N |
+| 1461 | SCREEN11 | HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない |
+| 1462 | SCREEN11 | LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N |
+| 1463 | SCREEN11 | LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N |
+| 1464 | SCREEN11 | LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1465 | SCREEN11 | LMMM 上端で打ち切り → LMMM (DY): SY/NY |
+| 1466 | SCREEN11 | HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N |
+| 1467 | SCREEN11 | HMMM 上端で打ち切り → HMMM (DY): SY/NY |
+| 1468 | SCREEN11 | YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N |
+| 1469 | SCREEN11 | LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N |
+| 1470 | SCREEN11 | LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色 |
+| 1471 | SCREEN11 | LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1472 | SCREEN11 | HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N |
+| 1473 | SCREEN11 | PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持 |
+| 1474 | SCREEN11 | POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持 |
+| 1475 | SCREEN11 | LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む |
+| 1476 | SCREEN11 | SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持 |
+
+### LFMM 終了時のレジスタ
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1477 | SCREEN5 | LFMM → LFMM (NY): DX 保持, DY=DY0+NY, フォントアドレスが進む |
+| 1478 | SCREEN5 | LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない |
+
+### LFMM 終了時のレジスタ
+
+| No. | モード | 内容 |
+|---:|---|---|
+| 1479 | SCREEN8 | LFMM → LFMM (NY): DX 保持, DY=DY0+NY, フォントアドレスが進む |
+| 1480 | SCREEN8 | LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない |

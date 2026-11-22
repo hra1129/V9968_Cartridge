@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -----------------------------------------------------------------------------
-#	gen_vdpchk.py -- test script generator for VDPCHK.COM
+#	gen_vdpchk.py -- test script generator for VDPCHK.COM and VDPREG.COM
 #
-#	Builds the byte-code script executed by VDPCHK.ASM (and by the RTL bench
+#	Builds the byte-code scripts executed by VDPCHK_MAIN.ASM (and by the RTL bench
 #	fpga/.../src/v9968/test_vdpchk), the expected CRC of every test, and
 #	test_item.md.  The expected values come from a reference model of the
 #	V9958 command engine that follows openMSX (VDPCmdEngine.cc, verified
@@ -13,11 +13,16 @@
 #	destination).  Every bank gets its own fill pattern (bank_seed) and the
 #	banks that differ from the target in one bank bit are read back too.
 #
+#	VDPREG.COM (a second script, it does not fit into the TPA together with
+#	the first one) checks the registers left after every command: a command
+#	is followed by commands that rewrite only some registers.  Its test
+#	numbers continue after the last one of VDPCHK.COM.
+#
 #	Outputs (this folder):
-#		VDPCHK.INC		script + tables for zma
-#		vdpchk.hex		the same script, one byte per line ($readmemh)
-#		vdpchk_expect.txt	expected log bytes of every test (debug aid)
-#		test_item.md		numbered test items
+#		VDPCHK.INC / VDPREG.INC		script + tables for zma
+#		vdpchk.hex / vdpreg.hex		the same script, one byte per line ($readmemh)
+#		vdpchk_expect.txt / vdpreg_expect.txt	expected log bytes of every test (debug aid)
+#		test_item.md		numbered test items of both
 # -----------------------------------------------------------------------------
 import os
 import random
@@ -26,7 +31,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------------------------------------------------
-#	script op codes (keep in sync with VDPCHK.ASM and test_vdpchk/tb.sv)
+#	script op codes (keep in sync with VDPCHK_MAIN.ASM and test_vdpchk/tb.sv)
 # ---------------------------------------------------------------------------
 OP_END, OP_TEST, OP_CHECK, OP_REG, OP_P4, OP_CMD, OP_WAITCE, OP_FEED, OP_DRAIN, \
 	OP_STAT, OP_FILLP, OP_FILLC, OP_READ, OP_CPUW, OP_CPUR, OP_SECTION, \
@@ -277,10 +282,13 @@ class Engine:
 		tx = -1 if arg & DIX else 1
 		ty = -1 if arg & DIY else 1
 		ppb = 1 << self.sh
-		res = {'col': None, 'asx': None, 'bd': False, 'lmcm': []}
+		res = {'col': None, 'asx': None, 'bd': False, 'lmcm': [], 'end': {}}
+		end = res['end']			# registers changed by the command (V9958 table 4.7)
+		nyv = ny if ny else self.ny0()
 		col = clr & self.cmask
 		if c == C_POINT:
 			res['col'] = self.point(sx, sy)
+			end['clr'] = res['col']
 		elif c == C_PSET:
 			self.pset(dx, dy, col, lop)
 		elif c == C_SRCH:
@@ -324,6 +332,7 @@ class Engine:
 					anx += 1
 					if stop or (adx & self.ppl):
 						break
+			end['dy'] = dy & ymask
 		elif c in (C_LMMV, C_LMMC):
 			tnx = self.clip1p(dx, nx, arg)
 			tny = self.clipy1(dy, ny, arg)
@@ -338,6 +347,7 @@ class Engine:
 						k += 1
 					adx += tx
 				dy += ty
+			end.update(dy=dy & ymask, ny=(nyv - tny) & ymask)
 		elif c == C_LMMM:
 			tnx = self.clip2p(sx, dx, nx, arg)
 			tny = self.clipy2(sy, dy, ny, arg)
@@ -349,6 +359,7 @@ class Engine:
 					adx += tx
 				sy += ty
 				dy += ty
+			end.update(sy=sy & ymask, dy=dy & ymask, ny=(nyv - tny) & ymask)
 		elif c == C_LMCM:
 			tnx = self.clip1p(sx, nx, arg)
 			tny = self.clipy1(sy, ny, arg)
@@ -359,6 +370,7 @@ class Engine:
 					asx += tx
 				sy += ty
 			res['col'] = res['lmcm'][-1]
+			end.update(sy=sy & ymask, ny=(nyv - tny) & ymask, clr=res['col'])
 		elif c in (C_HMMV, C_HMMC):
 			tnx = self.clip1b(dx, nx, arg)
 			tny = self.clipy1(dy, ny, arg)
@@ -373,6 +385,7 @@ class Engine:
 						k += 1
 					adx += tx * ppb
 				dy += ty
+			end.update(dy=dy & ymask, ny=(nyv - tny) & ymask)
 		elif c == C_HMMM:
 			tnx = self.clip2b(sx, dx, nx, arg)
 			tny = self.clipy2(sy, dy, ny, arg)
@@ -384,6 +397,7 @@ class Engine:
 					adx += tx * ppb
 				sy += ty
 				dy += ty
+			end.update(sy=sy & ymask, dy=dy & ymask, ny=(nyv - tny) & ymask)
 		elif c == C_YMMM:
 			tnx = self.clip1b(dx, 512, arg)
 			tny = self.clipy2(sy, dy, ny, arg)
@@ -394,10 +408,11 @@ class Engine:
 					adx += tx * ppb
 				sy += ty
 				dy += ty
+			end.update(sy=sy & ymask, dy=dy & ymask, ny=(nyv - tny) & ymask)
 		elif c == C_LFMM:
 			# characters of 8 dots x NY rows, one byte per row (MSB = left), stored one
 			# after another at the CPU-view font address.  Only fully visible text is modelled.
-			fa = (r['sx'] | (r['sy'] << 16)) & 0x3FFFF
+			fa = r['font']
 			bg = r['bg'] & self.cmask
 			assert not arg & (DIX | DIY) and 0 < nx and 0 < ny
 			assert dx + 8 * nx <= self.ppl and dy + ny <= (self.g.amask + 1) // GEOM[geom][3]
@@ -407,6 +422,8 @@ class Engine:
 					fa += 1
 					for b in range(8):
 						self.pset(dx + 8 * ch + b, dy + row, col if (v >> (7 - b)) & 1 else bg, lop)
+			# DX is kept, DY ends below the characters, F (the font address) advances
+			end.update(dy=(dy + ny) & ymask, ny=0, font=fa & 0x3FFFF)
 		else:
 			raise ValueError('unsupported command %02X' % cmd)
 		return res
@@ -432,12 +449,14 @@ class Gen:
 		self.sec = None
 		self.group = ''
 		self.seed = 0x31
-		# V9968 extension state as left by VDPCHK.ASM detect_vdp: V58=1, locked
+		# V9968 extension state as left by VDPCHK_MAIN.ASM detect_vdp: V58=1, locked
 		self.v58 = 1
 		self.lock = 1
 		self.cpu_bank = self.bg_bank = self.spr_bank = self.src_bank = self.dst_bank = 0
 		self.rpref = None			# (address, bank) of the byte in the CPU read-ahead buffer
 		self.wptr = None			# next CPU write address
+		self.cr = None				# R#32-R#45 left by the last command (None = unknown)
+		self.font = 0				# V9968 LFMM font address (set by R#32-R#34)
 
 	@property
 	def v256(self):
@@ -791,16 +810,23 @@ class Gen:
 		self.bank_regions(self.bread, regs, bks)
 
 	def cmd(self, c, sx=0, sy=0, dx=0, dy=0, nx=0, ny=0, clr=0, arg=0, autofill=True, check=True,
-			guard=(), before=None, between=None, bg=0):
+			guard=(), before=None, between=None, bg=0, write=None):
 		"""guard: banks that get the same regions and must not change.
 		before: called after the fill and before the command (CPU accesses).
-		between: called while the command is running (CPU accesses to other banks)."""
+		between: called while the command is running (CPU accesses to other banks).
+		write: None = R#32-R#46 are all written.  Otherwise only the registers named
+		in it (sx sy dx dy nx ny clr arg) and R#46 are written; see probe()."""
 		m = self.mode
 		seed = self.seed
 		cc = c & 0xF0
 		if cc in (C_LMMC, C_HMMC):
 			clr = PAT[seed]
-		r = dict(sx=sx, sy=sy, dx=dx, dy=dy, nx=nx, ny=ny, clr=clr, arg=arg, cmd=c, bg=bg)
+			assert write is None or 'clr' in write
+		if write is None or 'sx' in write:
+			self.font = (self.font & 0x30000) | (sx & 0xFFFF)
+		if write is None or 'sy' in write:
+			self.font = (self.font & 0x0FFFF) | ((sy & 3) << 16)
+		r = dict(sx=sx, sy=sy, dx=dx, dy=dy, nx=nx, ny=ny, clr=clr, arg=arg, cmd=c, bg=bg, font=self.font)
 
 		def data(k):
 			return PAT[(seed + k) & 0xFF]
@@ -809,7 +835,15 @@ class Gen:
 			dry = Engine(self, dry=True)
 			dry.run(m.geom, r, data)
 			plan = self.bank_plan(dry.rows, guard)
-			self.fill_plan(plan)
+			if write is not None:
+				# probe: the rows already known in this test (the previous command) are kept
+				fplan = [(bk, [(a, n) for a, n in regs if not all(
+					self.known[self.phys(a + i, bk)] for i in range(n))]) for bk, regs in plan]
+				fplan = [(bk, regs) for bk, regs in fplan if regs]
+				if fplan:
+					self.fill_plan(fplan)
+			else:
+				self.fill_plan(plan)
 		if before:
 			before()
 		if cc == C_SRCH:
@@ -819,11 +853,28 @@ class Gen:
 		if cc == C_LFMM:
 			self.reg(12, bg)				# LFMM background colour
 		arg_out = arg | (0x80 if m.fg4 else 0)
-		self.b(OP_CMD, sx, sx >> 8, sy, sy >> 8, dx, dx >> 8, dy, dy >> 8,
-			nx, nx >> 8, ny, ny >> 8, clr, arg_out, c)
+		if write is None:
+			self.b(OP_CMD, sx, sx >> 8, sy, sy >> 8, dx, dx >> 8, dy, dy >> 8,
+				nx, nx >> 8, ny, ny >> 8, clr, arg_out, c)
+		else:
+			assert self.cr is not None
+			for k, n in (('sx', 32), ('sy', 34), ('dx', 36), ('dy', 38), ('nx', 40), ('ny', 42)):
+				if k in write:
+					self.reg(n, r[k])
+					self.reg(n + 1, r[k] >> 8)
+			if 'clr' in write:
+				self.reg(44, clr)
+			if 'arg' in write:
+				self.reg(45, arg_out)
+			self.reg(46, c)
+		self.cr = dict(sx=sx, sy=sy, dx=dx, dy=dy, nx=nx, ny=ny, clr=clr, arg=arg, bg=bg)
 		res = None
 		if m.geom:
 			res = Engine(self).run(m.geom, r, data)
+			self.cr.update(res['end'])
+			self.font = self.cr.pop('font', self.font)
+			if cc in (C_LMMC, C_HMMC):
+				self.cr['clr'] = None		# the last byte the CPU wrote
 		if between:
 			assert cc not in (C_LMMC, C_HMMC, C_LMCM)
 			between()
@@ -847,6 +898,19 @@ class Gen:
 		if check and plan:
 			self.read_plan(plan)
 		return res
+
+	def probe(self, c, autofill=True, **kw):
+		"""run command c with the registers left by the previous command; only the
+		registers in kw (and R#46) are written"""
+		assert self.cr is not None and None not in [self.cr[k] for k in self.cr if k not in kw]
+		v = dict(self.cr)
+		v.update(kw)
+		return self.cmd(c, write=set(kw), autofill=autofill, **v)
+
+	def stop(self):
+		"""STOP (R#46 = 00h) without any other register write"""
+		self.reg(46, 0x00)
+		self.b(OP_WAITCE)
 
 	def finish(self):
 		self.end_section()
@@ -1123,6 +1187,122 @@ def suite_ignored(g, m):
 	g.cmd(C_HMMV, dx=0, dy=16, nx=64, ny=4, clr=0x77)
 	g.read(0x1000, 0x400)
 	g.end()
+
+
+def RS(g, m, desc, c, kw, probes):
+	"""command c, then probes that write only some registers and use the rest as the
+	previous command left them.  'STOP' = R#46 = 00h only."""
+	g.begin(desc, m)
+	g.cmd(c, check=False, **kw)
+	for p in probes:
+		if p == 'STOP':
+			g.stop()
+		else:
+			g.probe(p[0], **p[1])
+	g.end()
+
+
+def suite_regstate(g, m, level):
+	"""registers after a command (V9958 table 4.7): kept, end coordinate, NY = rows left.
+	level: 2 = all, 1 = small"""
+	W, sh, cm, _ = GEOM[m.geom]
+	ppb = 1 << sh
+	full = level >= 2
+	bg, tc = (1, 2) if cm == 3 else (5, 9) if cm == 15 else (0x25, 0x9A)
+	g.sub('コマンド終了時のレジスタ (一部だけ再設定して次のコマンドを実行)')
+
+	RS(g, m, 'HMMV → HMMV (NY/CLR): DX/NX/ARG 保持, DY=DY0+N', C_HMMV,
+		dict(dx=W // 8 + ppb, dy=30, nx=W // 4, ny=3, clr=0xA7), [(C_HMMV, dict(ny=2, clr=0x5A))])
+	RS(g, m, 'HMMV DIX=1 DIY=1 → HMMV (DY/CLR): NY=0, ARG 保持', C_HMMV,
+		dict(dx=W // 2, dy=40, nx=W // 5, ny=3, clr=0x3C, arg=DIX | DIY), [(C_HMMV, dict(dy=5, clr=0xC3))])
+	RS(g, m, 'HMMV 上端で打ち切り → HMMV (DY/CLR): NY=NY0-N', C_HMMV,
+		dict(dx=8 * ppb, dy=1, nx=4 * ppb, ny=4, clr=0x81, arg=DIY), [(C_HMMV, dict(dy=20, clr=0x42))])
+	RS(g, m, 'HMMV 上端で打ち切り → STOP → HMMV (DY/CLR): 待機中の STOP は NY を変えない', C_HMMV,
+		dict(dx=8 * ppb, dy=1, nx=4 * ppb, ny=4, clr=0x18, arg=DIY), ['STOP', (C_HMMV, dict(dy=24, clr=0x24))])
+
+	RS(g, m, 'LMMV DIX=1 → LMMV XOR (NY/CLR): DX/NX/ARG 保持, DY=DY0+N', C_LMMV,
+		dict(dx=W // 2 + 1, dy=70, nx=W // 6 + 1, ny=3, clr=0x6B, arg=DIX), [(C_LMMV | 3, dict(ny=2, clr=0x5C))])
+	if full:
+		RS(g, m, 'LMMV DIY=1 → LMMV OR (DY/CLR): NY=0', C_LMMV,
+			dict(dx=W // 8 + 1, dy=80, nx=W // 6, ny=4, clr=0x2D, arg=DIY), [(C_LMMV | 2, dict(dy=6, clr=0xD2))])
+	RS(g, m, 'LMMV 上端で打ち切り → LMMV (DY/CLR): NY=NY0-N', C_LMMV,
+		dict(dx=5, dy=2, nx=9, ny=6, clr=0x71, arg=DIY), [(C_LMMV, dict(dy=40, clr=0x17))])
+
+	RS(g, m, 'LMMM → LMMM XOR (NY): SX/DX/NX 保持, SY/DY=+N', C_LMMM,
+		dict(sx=W // 8 + 1, sy=170, dx=W // 2 + 2, dy=200, nx=W // 6 + 1, ny=3), [(C_LMMM | 3, dict(ny=2))])
+	if full:
+		RS(g, m, 'LMMM DIX=1 DIY=1 → LMMM (DY): NY=0, SY=SY0-N', C_LMMM,
+			dict(sx=W // 3, sy=240, dx=W // 2 + 3, dy=250, nx=W // 6, ny=4, arg=DIX | DIY), [(C_LMMM, dict(dy=6))])
+	RS(g, m, 'LMMM 上端で打ち切り → LMMM (DY): SY/NY', C_LMMM,
+		dict(sx=40, sy=10, dx=70, dy=2, nx=9, ny=5, arg=DIY), [(C_LMMM, dict(dy=30))])
+
+	RS(g, m, 'HMMM → HMMM (NY): SX/DX/NX 保持, SY/DY=+N', C_HMMM,
+		dict(sx=W // 8 + ppb, sy=340, dx=W // 2 + 2 * ppb, dy=346, nx=W // 4, ny=3), [(C_HMMM, dict(ny=2))])
+	if full:
+		RS(g, m, 'HMMM DIY=1 → HMMM (DY): NY=0, SY=SY0-N', C_HMMM,
+			dict(sx=W // 3, sy=380, dx=W // 2 + 2 * ppb, dy=390, nx=W // 6, ny=4, arg=DIY), [(C_HMMM, dict(dy=6))])
+	RS(g, m, 'HMMM 上端で打ち切り → HMMM (DY): SY/NY', C_HMMM,
+		dict(sx=W // 2, sy=10, dx=W // 4, dy=2, nx=6 * ppb, ny=5, arg=DIY), [(C_HMMM, dict(dy=30))])
+
+	RS(g, m, 'YMMM DIX=1 → YMMM (NY): DX/ARG 保持, SY/DY=+N', C_YMMM,
+		dict(sy=450, dx=W // 3 + 1, dy=460, ny=4, arg=DIX), [(C_YMMM, dict(ny=3))])
+	if full:
+		RS(g, m, 'YMMM 上端で打ち切り → YMMM (DY): SY/NY', C_YMMM,
+			dict(sy=10, dx=W - 9 * ppb, dy=2, ny=6, arg=DIY), [(C_YMMM, dict(dy=30))])
+
+	RS(g, m, 'LMCM → LMCM (NY): SX/NX 保持, SY=SY0+N', C_LMCM,
+		dict(sx=W // 8 + 1, sy=480, nx=7, ny=3), [(C_LMCM, dict(ny=2))])
+	RS(g, m, 'LMCM DIX=1 → PSET (R#46 のみ): CLR=最後に読んだ色', C_LMCM,
+		dict(sx=W // 2 + 1, sy=486, dx=W // 3, dy=490, nx=5, ny=2, arg=DIX), [(C_PSET, {})])
+	if full:
+		RS(g, m, 'LMCM 上端で打ち切り → LMCM (SY): NY=NY0-N', C_LMCM,
+			dict(sx=W // 4, sy=2, nx=4, ny=6, arg=DIY), [(C_LMCM, dict(sy=20))])
+
+	RS(g, m, 'LMMC → LMMC XOR (NY/CLR): DX/NX 保持, DY=DY0+N', C_LMMC,
+		dict(dx=W // 8 + 1, dy=100, nx=7, ny=3), [(C_LMMC | 3, dict(ny=2, clr=0))])
+	if full:
+		RS(g, m, 'LMMC 上端で打ち切り → LMMC (DY/CLR): NY=NY0-N', C_LMMC,
+			dict(dx=W // 2 + 1, dy=1, nx=6, ny=5, arg=DIX | DIY), [(C_LMMC, dict(dy=30, clr=0))])
+
+	RS(g, m, 'HMMC → HMMC (NY/CLR): DX/NX 保持, DY=DY0+N', C_HMMC,
+		dict(dx=W // 8 + ppb, dy=180, nx=8 * ppb, ny=3), [(C_HMMC, dict(ny=2, clr=0))])
+	if full:
+		RS(g, m, 'HMMC DIX=1 DIY=1 → HMMC (DY/CLR): NY=0', C_HMMC,
+			dict(dx=W // 2, dy=190, nx=6 * ppb, ny=3, arg=DIX | DIY), [(C_HMMC, dict(dy=4, clr=0))])
+
+	RS(g, m, 'PSET → PSET XOR (R#46 のみ): DX/DY/CLR 保持', C_PSET,
+		dict(dx=W // 3, dy=210, clr=0x5A), [(C_PSET | 3, {})])
+	RS(g, m, 'POINT → PSET → POINT (R#46 のみ): CLR=読んだ色, SX/SY/DX/DY 保持', C_POINT,
+		dict(sx=W // 2 + 3, sy=232, dx=W // 5, dy=234), [(C_PSET, {}), (C_POINT, {})])
+
+	RS(g, m, 'LINE X 主軸 DIX=1 → LINE (CLR): DX/NX/NY/ARG 保持, DY 進む', C_LINE,
+		dict(dx=W // 2, dy=130, nx=40, ny=13, clr=0x5C, arg=DIX), [(C_LINE, dict(clr=0x3B))])
+	if full:
+		RS(g, m, 'LINE Y 主軸 DIY=1 → LINE (CLR): DY 進む', C_LINE,
+			dict(dx=W // 3, dy=160, nx=20, ny=7, clr=0x35, arg=DIY | MAJ), [(C_LINE, dict(clr=0x53))])
+
+	# SRCH: the line is filled with the background colour and one target dot
+	y = 300
+	e = Engine(g)
+	e.geom, e.ppl, e.sh, e.cmask = m.geom, W, sh, cm
+	g.begin('SRCH → SRCH → PSET (R#46 のみ): SX/SY/CLR/ARG/DX/DY 保持', m)
+	rep = {0: bg, 1: bg * 0x11, 2: bg * 0x55}[sh] if m.geom != 'G6' else bg * 0x11
+	g.fillc(e.addr(0, y), GEOM[m.geom][3], rep & 0xFF)
+	put_pixel_byte(g, m, y, 37, bg, tc)
+	g.cmd(C_SRCH, sx=W - 5, sy=y, dx=W // 4, dy=304, clr=tc, arg=DIX, autofill=False)
+	g.probe(C_SRCH, autofill=False)
+	g.probe(C_PSET)
+	g.end()
+
+
+def suite_regstate_lfmm(g, m):
+	"""V9968 LFMM: DX kept, DY = DY0 + NY, NY = 0, the font address advances"""
+	g.sub('LFMM 終了時のレジスタ')
+	RS(g, m, 'LFMM → LFMM (NY): DX 保持, DY=DY0+NY, フォントアドレスが進む', C_LFMM,
+		dict(sx=0x1000, sy=0, dx=16, dy=100, nx=4, ny=8, clr=0x0F, bg=0x04), [(C_LFMM, dict(ny=8))])
+	RS(g, m, 'LFMM → HMMV → LFMM (DY/NY): 他のコマンドはフォントアドレスを進めない', C_LFMM,
+		dict(sx=0x2345, sy=1, dx=40, dy=200, nx=3, ny=8, clr=0x0E, bg=0x01),
+		[(C_HMMV, dict(ny=2, clr=0x33)), (C_LFMM, dict(dy=240, ny=16))])
 
 
 def suite_cpu(g):
@@ -1639,15 +1819,43 @@ def build():
 
 	g.section('VRAM 4MB バンク R#28/R#29/R#30 (V9968 のみ)', v9968_only=True)
 	suite_bank(g)
+
 	g.finish()
 	return g
 
 
-def write_outputs(g):
+def build_reg(first):
+	"""VDPREG.COM: the registers left after a command.  first = the number of the
+	last test of VDPCHK.COM"""
+	g = Gen()
+	g.num = first
+	full = [('SCREEN5', 2), ('SCREEN8', 2), ('SCREEN6', 1), ('SCREEN7', 1), ('SCREEN10', 1), ('SCREEN12', 1)]
+	for name, lv in full:
+		g.section('%s のコマンド終了時のレジスタ' % name)
+		suite_regstate(g, mode(name), lv)
+	g.section('SCREEN0-4 で R#25 CMD=1 のコマンド終了時のレジスタ')
+	for name in ('SCREEN0(W40)', 'SCREEN0(W80)', 'SCREEN1', 'SCREEN2', 'SCREEN3', 'SCREEN4'):
+		suite_regstate(g, mode(name, cmd=True), 1)
+	g.section('FG4=1 のコマンド終了時のレジスタ (V9968 のみ)', v9968_only=True)
+	for name in ('SCREEN0(W40)', 'SCREEN0(W80)', 'SCREEN1', 'SCREEN2', 'SCREEN3', 'SCREEN4', 'SCREEN5',
+			'SCREEN6', 'SCREEN7', 'SCREEN8', 'SCREEN10', 'SCREEN11', 'SCREEN12'):
+		bitmap = BASE[name][0] in ('G4', 'G5', 'G6', 'G7')
+		suite_regstate(g, mode(name, cmd=not bitmap, fg4=True), 1)
+	g.section('256KB モード (V58=0) のコマンド終了時のレジスタ (V9968 のみ)', v9968_only=True)
+	for name in ('SCREEN5', 'SCREEN6', 'SCREEN7', 'SCREEN8', 'SCREEN11'):
+		suite_regstate(g, mode(name), 2 if name in ('SCREEN5', 'SCREEN8') else 1)
+	for name in ('SCREEN5', 'SCREEN8'):
+		suite_regstate_lfmm(g, mode(name))
+	g.finish()
+	return g
+
+
+def write_script(g, base, count):
+	"""base.INC (zma), base.hex ($readmemh) and base_expect.txt (lower case)"""
 	code = bytes(g.code)
-	with open(os.path.join(HERE, 'VDPCHK.INC'), 'w', newline='\r\n') as f:
+	with open(os.path.join(HERE, base.upper() + '.INC'), 'w', newline='\r\n') as f:
 		f.write('; generated by gen_vdpchk.py -- do not edit\n')
-		f.write('TOTAL_TESTS\t:= %d\n' % g.num)
+		f.write('TOTAL_TESTS\t:= %d\n' % count)
 		f.write('pat_table::\n')
 		for i in range(0, 256, 16):
 			f.write('\t\tdb\t\t' + ', '.join('0x%02X' % v for v in PAT[i:i + 16]) + '\n')
@@ -1661,21 +1869,38 @@ def write_outputs(g):
 		for i in range(0, len(code), 16):
 			f.write('\t\tdb\t\t' + ', '.join('0x%02X' % v for v in code[i:i + 16]) + '\n')
 		f.write('script_end::\n')
-	with open(os.path.join(HERE, 'vdpchk.hex'), 'w') as f:
+	with open(os.path.join(HERE, base + '.hex'), 'w') as f:
 		for v in code:
 			f.write('%02X\n' % v)
-	with open(os.path.join(HERE, 'pat.hex'), 'w') as f:
-		for v in PAT:
-			f.write('%02X\n' % v)
-	with open(os.path.join(HERE, 'vdpchk_expect.txt'), 'w') as f:
+	with open(os.path.join(HERE, base + '_expect.txt'), 'w') as f:
 		for n, log in g.expect:
 			f.write('%d %04X %d %s\n' % (n, crc16(log), len(log),
 				''.join('%02X' % v for v in log[:4096])))
+	return code
+
+
+def write_items(f, g):
+	for it in g.items:
+		if it[0] == 'section':
+			f.write('\n## %s\n' % it[1])
+		elif it[0] == 'group':
+			f.write('\n### %s\n\n| No. | モード | 内容 |\n|---:|---|---|\n' % it[1])
+		else:
+			f.write('| %d | %s | %s |\n' % (it[1], it[2], it[4]))
+
+
+def write_outputs(g, gr):
+	code = write_script(g, 'vdpchk', g.num)
+	code_r = write_script(gr, 'vdpreg', gr.num - g.num)
+	with open(os.path.join(HERE, 'pat.hex'), 'w') as f:
+		for v in PAT:
+			f.write('%02X\n' % v)
 
 	with open(os.path.join(HERE, 'test_item.md'), 'w', encoding='utf-8', newline='\n') as f:
 		f.write('# VDPCHK テスト項目一覧\n\n')
 		f.write('このファイルは `gen_vdpchk.py` が生成します。直接編集しないでください。\n\n')
-		f.write('- 全 %d 項目。VDPCHK.COM は失敗した項目の番号を最後に表示します。\n' % g.num)
+		f.write('- 全 %d 項目。VDPCHK.COM が 1～%d、VDPREG.COM が %d～%d を実行し、失敗した項目の番号を最後に表示します。\n'
+			% (gr.num, g.num, g.num + 1, gr.num))
 		f.write('- 期待値は openMSX の VDPCmdEngine (実機で確認された動作) とデータブックに準拠した参照モデルで生成しています。\n')
 		f.write('- 各項目は試験範囲を既知のパターンで埋めてから実行し、CPU で VRAM を読み戻して CRC で比較します。'
 			'範囲はコマンドが触れるライン全体と、その上下 1 ラインです。\n')
@@ -1686,21 +1911,26 @@ def write_outputs(g):
 			'LFMM はフォントを SRC バンク、描画先を DST バンクに置き、ガードバンクの同じアドレスには別のフォントを置いて確認します。'
 			'BG バンク (表示のみ)、コマンド実行中の R#30 変更は自動確認の対象外です。\n')
 		f.write('- 番号の後ろの `T` はタイムアウト (CE または TR が落ちなかった) を表します。\n')
-		for it in g.items:
-			if it[0] == 'section':
-				f.write('\n## %s\n' % it[1])
-			elif it[0] == 'group':
-				f.write('\n### %s\n\n| No. | モード | 内容 |\n|---:|---|---|\n' % it[1])
-			else:
-				f.write('| %d | %s | %s |\n' % (it[1], it[2], it[4]))
-	return code
+		f.write('\n# VDPCHK.COM\n')
+		write_items(f, g)
+		f.write('\n# VDPREG.COM (コマンド終了時のレジスタ)\n\n')
+		f.write('- V9958 の表 4.7 (コマンド終了時のレジスタの状態) を確認します。コマンド R#32～R#46 は読み出せないため、'
+			'最初のコマンドの後に一部のレジスタ (内容欄の括弧内) と R#46 だけを書いて次のコマンドを実行し、'
+			'その描画結果、S#7、S#8/S#9 から、保持された値と更新された値 (DY/SY = 終了座標、NY = 残り行数、'
+			'CLR = 読み出した色) を確認します。\n')
+		f.write('- NY=0 の確認は、DIY=1 で小さい DY から実行し、上端で打ち切られる行数で確認します'
+			' (NY=0 は 1024 行、256KB モードでは 2048 行)。\n')
+		f.write('- LMMC/HMMC の CLR (最後に CPU が書いた値) と、実行中の STOP は対象外です。\n')
+		write_items(f, gr)
+	return code, code_r
 
 
 def main():
 	g = build()
-	code = write_outputs(g)
-	ext = sum(1 for it in g.items if it[0] == 'test')
-	print('tests=%d script=%d bytes' % (ext, len(code)))
+	gr = build_reg(g.num)
+	code, code_r = write_outputs(g, gr)
+	print('VDPCHK: tests=%d script=%d bytes' % (g.num, len(code)))
+	print('VDPREG: tests=%d (%d-%d) script=%d bytes' % (gr.num - g.num, g.num + 1, gr.num, len(code_r)))
 
 
 if __name__ == '__main__':

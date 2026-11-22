@@ -1,6 +1,6 @@
 @echo off
-rem  usage: run.bat [+from=N] [+to=N]
-rem  Runs test/VDPCHK/vdpchk.hex (built by test/VDPCHK/build.bat) on the VDP RTL.
+rem  usage: run.bat [+script=vdpreg] [+from=N] [+to=N]
+rem  Runs test/VDPCHK/vdpchk.hex or vdpreg.hex (built by test/VDPCHK/build.bat) on the VDP RTL.
 cd /d "%~dp0"
 if not exist work vlib work
 if errorlevel 1 exit /b 1

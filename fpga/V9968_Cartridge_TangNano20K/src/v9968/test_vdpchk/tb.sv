@@ -1,11 +1,13 @@
 // -----------------------------------------------------------------------------
-//	test_vdpchk: runs the VDPCHK.COM test script (test/VDPCHK/vdpchk.hex) on the VDP RTL
+//	test_vdpchk: runs the VDPCHK.COM / VDPREG.COM test script (test/VDPCHK/vdpchk.hex,
+//	vdpreg.hex) on the VDP RTL
 //
 //	FILLP / FILLC / READ / BFILLP / BREAD use a backdoor to the 4MB VRAM model (bank =
 //	R#28) after the shared cache has been flushed.  Registers, status, CPU VRAM access (CPUW/CPUR) and CPU transfers
 //	(FEED/DRAIN) go through the bus like on the real machine.
 //
-//	plusargs: +dir=<folder of vdpchk.hex and pat.hex>  +from=<first test>  +to=<last test>
+//	plusargs: +dir=<folder of vdpchk.hex and pat.hex>  +script=<vdpchk (default) | vdpreg>
+//	          +from=<first test>  +to=<last test>
 //	For every failed test the read log is written to fail_<n>.hex.
 // -----------------------------------------------------------------------------
 `timescale 1ns/1ps
@@ -87,7 +89,7 @@ module tb;
 	reg [17:0] addr;
 	reg [15:0] bmask; reg [7:0] brest, bseed; integer bk;
 	integer len;
-	reg [1023:0] dir, fname;
+	reg [1023:0] dir, fname, script;
 
 	function [7:0] fb; begin fb = S[pc]; pc = pc + 1; end endfunction
 	function [15:0] fw; begin fw = {S[pc + 1], S[pc]}; pc = pc + 2; end endfunction
@@ -135,10 +137,11 @@ module tb;
 			CRC_T[i] = c[15:0];
 		end
 		if (!$value$plusargs("dir=%s", dir)) dir = "../../../../../test/VDPCHK";
+		if (!$value$plusargs("script=%s", script)) script = "vdpchk";
 		if (!$value$plusargs("from=%d", from_n)) from_n = 1;
 		if (!$value$plusargs("to=%d", to_n)) to_n = 99999;
 		if (!$value$plusargs("lim=%d", lim)) lim = 16000000;
-		$sformat(fname, "%0s/vdpchk.hex", dir); $readmemh(fname, S);
+		$sformat(fname, "%0s/%0s.hex", dir, script); $readmemh(fname, S);
 		$sformat(fname, "%0s/pat.hex", dir); $readmemh(fname, PAT);
 		repeat (10) @(posedge clk); reset_n = 1; repeat (50) @(posedge clk);
 
@@ -175,7 +178,8 @@ module tb;
 					else if (cur % 50 == 0) $display("ok %0d at %0t", cur, $time);
 				end
 			end
-			8'h03: begin a0 = fb(); a1 = fb(); vreg(a0[5:0], a1); end
+			// the command registers belong to the test (a write to R#46 starts a command)
+			8'h03: begin a0 = fb(); a1 = fb(); if (active || a0[5:0] < 6'd32 || a0[5:0] > 6'd46) vreg(a0[5:0], a1); end
 			8'h04: begin a0 = fb(); out(3'd4, a0); end
 			8'h05: begin
 				if (active) begin
