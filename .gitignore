@@ -13,3 +13,5 @@ log.txt
 *.rom
 romimage_*.h
 transcript
+
+.fake
